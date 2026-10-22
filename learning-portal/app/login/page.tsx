@@ -31,7 +31,13 @@ export default function LoginPage() {
   const handleBlocksSsoLogin = async () => {
     setLoadingRole("BLOCKS_SSO")
     try {
-      await blocksClient.auth.idp.redirectToProvider()
+      const res = await fetch("/api/auth/blocks/initiate")
+      const data = await res.json()
+      if (data.redirectUrl) {
+        window.location.assign(data.redirectUrl)
+      } else {
+        throw new Error(data.error || "Failed to get Blocks login redirect URL")
+      }
     } catch (err) {
       console.error("Blocks SSO redirect failed:", err)
       setLoadingRole(null)

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { blocksClient } from "@/lib/blocks"
 import { Sparkles, Loader2, AlertCircle } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -20,32 +19,42 @@ export default function LoginCallbackPage() {
     const handleCallback = async () => {
       try {
         setProcessing(true)
-        // Complete the hosted login via @seliseblocks/client SDK
-        const callbackResult = await blocksClient.auth.idp.callback(window.location.href)
-        
-        // Fetch authenticated user claims from SELISE Blocks IAM
-        const userInfo = (await blocksClient.auth.userInfo()) as { data?: Record<string, string> }
-        const claims = userInfo?.data || {}
 
-        // Sync with portal session cookie
-        const res = await fetch("/api/auth/login", {
+        // Parse OIDC callback parameters
+        const urlParams = new URLSearchParams(window.location.search)
+        const code = urlParams.get("code")
+        const state = urlParams.get("state")
+        const errorParam = urlParams.get("error")
+        const errorDesc = urlParams.get("error_description")
+
+        if (errorParam) {
+          throw new Error(errorDesc || errorParam)
+        }
+
+        if (!code) {
+          throw new Error("No authorization code found in callback URL")
+        }
+
+        // Delegate code exchange and session establishment to server (safe from CORS)
+        const res = await fetch("/api/auth/blocks/callback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            role: "LEARNER",
-            email: claims.email || "blocks.user@selise.ch",
-            name: claims.fullName || claims.displayName || claims.name || "SELISE Blocks User",
-            discipline: "Cloud Engineer",
-            avatar: "SB",
+            code,
+            state,
+            url: window.location.href,
           }),
         })
 
-        if (res.ok) {
-          router.push("/")
-          router.refresh()
-        } else {
-          router.push("/")
+        const data = await res.json()
+
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to complete authentication with Blocks IAM")
         }
+
+        // Redirect to main portal
+        router.push("/")
+        router.refresh()
       } catch (err: unknown) {
         console.error("SELISE Blocks OIDC callback error:", err)
         setError(err instanceof Error ? err.message : "Authentication callback failed")

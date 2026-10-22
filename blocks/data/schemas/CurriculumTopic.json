@@ -1,0 +1,43 @@
+{
+  "schemaName": "CurriculumTopic",
+  "collectionName": "blx_CurriculumTopics",
+  "schemaType": 1,
+  "fields": [
+    {
+      "name": "topicId",
+      "type": "String",
+      "isArray": false,
+      "isUniqueData": true
+    },
+    {
+      "name": "domainId",
+      "type": "String",
+      "isArray": false
+    },
+    {
+      "name": "domainTitle",
+      "type": "String",
+      "isArray": false
+    },
+    {
+      "name": "title",
+      "type": "String",
+      "isArray": false
+    },
+    {
+      "name": "level",
+      "type": "String",
+      "isArray": false
+    },
+    {
+      "name": "summary",
+      "type": "String",
+      "isArray": false
+    },
+    {
+      "name": "roles",
+      "type": "String",
+      "isArray": true
+    }
+  ]
+}

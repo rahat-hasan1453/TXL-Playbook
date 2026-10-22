@@ -15,7 +15,9 @@ import {
   Mail,
   User,
   Layers,
+  Globe2,
 } from "lucide-react"
+import { blocksClient } from "@/lib/blocks"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,6 +27,16 @@ export default function LoginPage() {
   const [customName, setCustomName] = useState("")
   const [customRole, setCustomRole] = useState<"LEARNER" | "UNIT_HEAD">("LEARNER")
   const [customDiscipline, setCustomDiscipline] = useState("Product Engineer")
+
+  const handleBlocksSsoLogin = async () => {
+    setLoadingRole("BLOCKS_SSO")
+    try {
+      await blocksClient.auth.idp.redirectToProvider()
+    } catch (err) {
+      console.error("Blocks SSO redirect failed:", err)
+      setLoadingRole(null)
+    }
+  }
 
   const handleQuickLogin = async (role: "LEARNER" | "UNIT_HEAD") => {
     setLoadingRole(role)
@@ -116,6 +128,44 @@ export default function LoginPage() {
           <p className="text-sm text-slate-300 max-w-lg mx-auto font-medium">
             Select your operational role below to enter your personalized curriculum tracks or access executive organizational capability matrix.
           </p>
+        </div>
+
+        {/* SELISE Blocks Cloud Hosted SSO Banner */}
+        <div className="bg-[#142617]/70 border-2 border-[#67E14B] p-4 sm:p-5 rounded-none flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+          <div className="flex items-center gap-3.5 text-left">
+            <div className="w-10 h-10 rounded-none bg-[#1a3820] border border-[#67E14B] flex items-center justify-center shrink-0">
+              <Globe2 className="w-5 h-5 text-[#67E14B]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs px-2 py-0.5 bg-[#67E14B] text-black font-black uppercase tracking-wider">
+                  Live Cloud SSO
+                </span>
+                <span className="text-xs text-lime-300 font-mono">Tenant D5e5c23b</span>
+              </div>
+              <h4 className="text-sm font-extrabold text-white mt-1">
+                SELISE Blocks Hosted IAM Identity Provider
+              </h4>
+              <p className="text-xs text-slate-300">
+                Single Sign-On with verified enterprise identity and centralized role routing.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleBlocksSsoLogin}
+            disabled={loadingRole === "BLOCKS_SSO"}
+            className="w-full sm:w-auto shrink-0 px-6 py-3 bg-[#67E14B] hover:bg-[#7FE866] text-black font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-lime-500/20 disabled:opacity-50"
+          >
+            {loadingRole === "BLOCKS_SSO" ? (
+              <span>Redirecting...</span>
+            ) : (
+              <>
+                <span>Sign In with Blocks IAM</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
         </div>
 
         {/* 1-Click Role Persona Selection Cards */}

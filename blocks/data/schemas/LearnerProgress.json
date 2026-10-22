@@ -1,0 +1,32 @@
+{
+  "schemaName": "LearnerProgress",
+  "collectionName": "blx_LearnerProgresses",
+  "schemaType": 1,
+  "fields": [
+    {
+      "name": "userId",
+      "type": "String",
+      "isArray": false
+    },
+    {
+      "name": "userEmail",
+      "type": "String",
+      "isArray": false
+    },
+    {
+      "name": "topicId",
+      "type": "String",
+      "isArray": false
+    },
+    {
+      "name": "status",
+      "type": "String",
+      "isArray": false
+    },
+    {
+      "name": "completedAt",
+      "type": "DateTime",
+      "isArray": false
+    }
+  ]
+}

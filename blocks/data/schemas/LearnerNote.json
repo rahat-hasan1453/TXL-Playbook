@@ -1,0 +1,32 @@
+{
+  "schemaName": "LearnerNote",
+  "collectionName": "blx_LearnerNotes",
+  "schemaType": 1,
+  "fields": [
+    {
+      "name": "userId",
+      "type": "String",
+      "isArray": false
+    },
+    {
+      "name": "userEmail",
+      "type": "String",
+      "isArray": false
+    },
+    {
+      "name": "topicId",
+      "type": "String",
+      "isArray": false
+    },
+    {
+      "name": "content",
+      "type": "String",
+      "isArray": false
+    },
+    {
+      "name": "isPublic",
+      "type": "Boolean",
+      "isArray": false
+    }
+  ]
+}

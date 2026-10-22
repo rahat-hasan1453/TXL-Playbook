@@ -1,7 +1,9 @@
 "use client"
 
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { CURRICULUM_DOMAINS, Domain, Topic } from "@/lib/curriculumData"
+import { UserSession } from "@/lib/auth"
 import {
   CheckCircle2,
   Circle,
@@ -25,7 +27,8 @@ import {
   GraduationCap,
   ArrowRight,
   Check,
-  Heart
+  Heart,
+  LogOut,
 } from "lucide-react"
 import RolePathwaysView, { ROLE_TRACKS } from "@/components/RolePathwaysView"
 
@@ -38,10 +41,39 @@ const MOCK_TEAM_MEMBERS = [
 ]
 
 export default function TXLLearningPortal() {
-  // Current active role & user
-  const [currentUserRole, setCurrentUserRole] = useState<"LEARNER" | "UNIT_HEAD">("LEARNER")
+  const router = useRouter()
+  const [currentUser, setCurrentUser] = useState<UserSession | null>(null)
   const [activeTab, setActiveTab] = useState<"what-to-learn" | "my-notes" | "shared-feed" | "unit-head">("what-to-learn")
   const [selectedRoleTrack, setSelectedRoleTrack] = useState<string>("ALL")
+
+  // Load session from cookie
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.user) {
+          setCurrentUser(data.user)
+        } else {
+          router.push("/login")
+        }
+      })
+      .catch(() => {
+        router.push("/login")
+      })
+  }, [router])
+
+  const currentUserRole: "LEARNER" | "UNIT_HEAD" = currentUser?.role || "LEARNER"
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" })
+      router.push("/login")
+      router.refresh()
+    } catch (err) {
+      console.error("Logout failed:", err)
+      router.push("/login")
+    }
+  }
 
   // User progress data (Topic ID -> 'COMPLETED' | 'IN_PROGRESS' | 'NOT_STARTED')
   const [progressState, setProgressState] = useState<Record<string, "COMPLETED" | "IN_PROGRESS">>({
@@ -195,50 +227,49 @@ export default function TXLLearningPortal() {
             </div>
           </div>
 
-          {/* User Role Switcher */}
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center bg-[#090d16] border-2 border-slate-700 rounded-none p-1 text-xs">
-              <button
-                onClick={() => {
-                  setCurrentUserRole("LEARNER")
-                  if (activeTab === "unit-head") setActiveTab("what-to-learn")
-                }}
-                className={`px-3 py-1.5 rounded-none font-bold transition ${
-                  currentUserRole === "LEARNER"
-                    ? "bg-[#67E14B] text-black shadow-md shadow-lime-500/30"
-                    : "text-slate-300 hover:text-white"
-                }`}
-              >
-                Learner View
-              </button>
-              <button
-                onClick={() => {
-                  setCurrentUserRole("UNIT_HEAD")
-                  setActiveTab("unit-head")
-                }}
-                className={`px-3 py-1.5 rounded-none font-bold transition ${
+          {/* User Profile & Logout Button */}
+          <div className="flex items-center space-x-3.5">
+            <div className="flex items-center space-x-2.5 bg-[#090d16] border-2 border-slate-700 px-3 py-1.5 rounded-none shadow-sm">
+              <div
+                style={
                   currentUserRole === "UNIT_HEAD"
-                    ? "bg-purple-600 text-white shadow-md shadow-purple-500/30"
-                    : "text-slate-300 hover:text-white"
-                }`}
+                    ? { borderColor: "#A855F7", color: "#C084FC" }
+                    : { borderColor: "#67E14B", color: "#7FE866" }
+                }
+                className="w-7 h-7 rounded-none bg-slate-900 flex items-center justify-center text-xs font-black border"
               >
-                Unit Head View
-              </button>
-            </div>
-
-            <div className="h-6 w-px bg-slate-800" />
-
-            <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-none bg-slate-800 flex items-center justify-center text-xs font-black text-lime-400 border-2 border-lime-500/50">
-                {currentUserRole === "UNIT_HEAD" ? "UH" : "RC"}
+                {currentUser?.avatar || (currentUserRole === "UNIT_HEAD" ? "UH" : "RC")}
               </div>
-              <div className="hidden sm:block text-left text-xs">
-                <p className="font-bold text-white leading-tight">
-                  {currentUserRole === "UNIT_HEAD" ? "Sarah Jenkins" : "Rahat Chowdhury"}
+              <div className="text-left text-xs">
+                <div className="flex items-center gap-1.5">
+                  <p className="font-bold text-white leading-tight">
+                    {currentUser?.name || (currentUserRole === "UNIT_HEAD" ? "Sarah Jenkins" : "Rahat Chowdhury")}
+                  </p>
+                  <span
+                    style={
+                      currentUserRole === "UNIT_HEAD"
+                        ? { backgroundColor: "#3b0764", borderColor: "#A855F7", color: "#C084FC" }
+                        : { backgroundColor: "#142617", borderColor: "#67E14B80", color: "#7FE866" }
+                    }
+                    className="text-[9px] px-1.5 py-0.2 rounded-none font-black border uppercase"
+                  >
+                    {currentUserRole === "UNIT_HEAD" ? "Unit Head" : "Learner"}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 font-medium">
+                  {currentUser?.discipline || (currentUserRole === "UNIT_HEAD" ? "Unit Head / Lead" : "AI Product Manager")}
                 </p>
-                <p className="text-lime-300 font-semibold">{currentUserRole === "UNIT_HEAD" ? "Unit Head / Lead" : "AI Product Manager"}</p>
               </div>
             </div>
+
+            <button
+              onClick={handleLogout}
+              className="px-2.5 py-1.5 rounded-none border border-slate-700 bg-slate-900 hover:bg-red-950/70 hover:border-red-500/80 hover:text-red-300 text-slate-400 text-xs font-bold transition flex items-center gap-1.5"
+              title="Logout from portal"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
         </div>
 
@@ -300,6 +331,9 @@ export default function TXLLearningPortal() {
             >
               <BarChart3 className="w-4 h-4" />
               <span>Unit Head Overview</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-none bg-purple-950 text-purple-300 border border-purple-500/60 font-black">
+                Executive
+              </span>
             </button>
           )}
         </div>

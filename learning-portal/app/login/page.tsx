@@ -17,7 +17,6 @@ import {
   Layers,
   Globe2,
 } from "lucide-react"
-import { blocksClient } from "@/lib/blocks"
 
 export default function LoginPage() {
   const router = useRouter()

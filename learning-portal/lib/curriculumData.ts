@@ -1,0 +1,664 @@
+export interface Topic {
+  id: string
+  title: string
+  description: string
+  roles: string[]
+  domainId: string
+}
+
+export interface Domain {
+  id: string
+  name: string
+  code: string
+  focus: string
+  topics: Topic[]
+}
+
+export const CURRICULUM_DOMAINS: Domain[] = [
+  {
+    id: "domain-1",
+    code: "01",
+    name: "Business",
+    focus: "How clients make money, how we create value for them, and how TXL earns from it.",
+    topics: [
+      {
+        id: "biz-1",
+        title: "Business Model Canvas",
+        description: "One page that shows how a business creates, delivers and captures value.",
+        roles: ["Everyone"],
+        domainId: "domain-1"
+      },
+      {
+        id: "biz-2",
+        title: "Value proposition design",
+        description: "Aligning product offerings with client requirements, pains, and gains.",
+        roles: ["Consultant", "Service Designer", "AI PM"],
+        domainId: "domain-1"
+      },
+      {
+        id: "biz-3",
+        title: "Pricing models",
+        description: "Understanding fixed pricing, retainers, subscriptions, and outcome-based pricing structures.",
+        roles: ["Consultant", "AI PM"],
+        domainId: "domain-1"
+      },
+      {
+        id: "biz-4",
+        title: "Unit economics",
+        description: "Analyzing customer lifetime value, acquisition cost, and profit margins.",
+        roles: ["Consultant", "AI PM"],
+        domainId: "domain-1"
+      },
+      {
+        id: "biz-5",
+        title: "Porter's Five Forces",
+        description: "Evaluating industry market forces and profitability constraints.",
+        roles: ["Consultant", "AI PM"],
+        domainId: "domain-1"
+      },
+      {
+        id: "biz-6",
+        title: "7 Powers",
+        description: "Identifying durable competitive advantages.",
+        roles: ["Consultant", "AI PM"],
+        domainId: "domain-1"
+      },
+      {
+        id: "biz-7",
+        title: "SWOT",
+        description: "Performing quick strategic assessments of strengths, weaknesses, opportunities, and threats.",
+        roles: ["Consultant", "Service Designer", "AI PM"],
+        domainId: "domain-1"
+      },
+      {
+        id: "biz-8",
+        title: "OKRs",
+        description: "Managing objectives and key results to target concrete outcomes.",
+        roles: ["Everyone"],
+        domainId: "domain-1"
+      },
+      {
+        id: "biz-9",
+        title: "Land and expand",
+        description: "Driving account growth post-acquisition.",
+        roles: ["Consultant", "AI PM"],
+        domainId: "domain-1"
+      },
+      {
+        id: "biz-10",
+        title: "Stakeholder mapping",
+        description: "Identifying decision-makers, influencers, and affected parties.",
+        roles: ["Consultant", "Service Designer"],
+        domainId: "domain-1"
+      },
+      {
+        id: "biz-11",
+        title: "Proposals and SOWs",
+        description: "Drafting clear scopes, risks, and signable assumptions.",
+        roles: ["Consultant", "AI PM"],
+        domainId: "domain-1"
+      }
+    ]
+  },
+  {
+    id: "domain-2",
+    code: "02",
+    name: "Product",
+    focus: "Deciding what to build, in what order, and how to know it worked.",
+    topics: [
+      {
+        id: "prod-1",
+        title: "Product discovery",
+        description: "Uncovering genuine user problems prior to development.",
+        roles: ["Everyone"],
+        domainId: "domain-2"
+      },
+      {
+        id: "prod-2",
+        title: "Jobs To Be Done",
+        description: "Articulating user progress goals instead of demographic labels.",
+        roles: ["Everyone"],
+        domainId: "domain-2"
+      },
+      {
+        id: "prod-3",
+        title: "Lean Startup and MVP",
+        description: "Build, measure, learn: the smallest thing that tests the riskiest assumption.",
+        roles: ["AI PM", "Service Designer", "Consultant"],
+        domainId: "domain-2"
+      },
+      {
+        id: "prod-4",
+        title: "Opportunity solution tree",
+        description: "Connecting outcomes to viable solutions and tests.",
+        roles: ["AI PM", "Service Designer"],
+        domainId: "domain-2"
+      },
+      {
+        id: "prod-5",
+        title: "Prioritisation methods",
+        description: "Utilizing RICE, MoSCoW, and Kano frameworks for defensible ranking.",
+        roles: ["AI PM"],
+        domainId: "domain-2"
+      },
+      {
+        id: "prod-6",
+        title: "Product metrics",
+        description: "Tracking retention, activation, and North Star metrics.",
+        roles: ["AI PM", "Consultant"],
+        domainId: "domain-2"
+      },
+      {
+        id: "prod-7",
+        title: "PRD writing",
+        description: "Creating requirements clear enough for human and machine execution.",
+        roles: ["AI PM", "Engineer"],
+        domainId: "domain-2"
+      },
+      {
+        id: "prod-8",
+        title: "Roadmaps",
+        description: "Communicating strategic direction via Now, Next, and Later horizons without rigid dates.",
+        roles: ["AI PM", "Consultant"],
+        domainId: "domain-2"
+      },
+      {
+        id: "prod-9",
+        title: "Experiment design",
+        description: "Executing A/B tests and fake-door experiments reliably.",
+        roles: ["AI PM", "Service Designer"],
+        domainId: "domain-2"
+      },
+      {
+        id: "prod-10",
+        title: "Product-led growth",
+        description: "Leveraging self-service onboarding and product usage for sales.",
+        roles: ["AI PM", "Consultant"],
+        domainId: "domain-2"
+      }
+    ]
+  },
+  {
+    id: "domain-3",
+    code: "03",
+    name: "Service and experience design",
+    focus: "Designing how a whole service works and feels, across people, agents and channels.",
+    topics: [
+      {
+        id: "serv-1",
+        title: "Design Thinking and Double Diamond",
+        description: "Iteratively diverging and converging on problems and solutions.",
+        roles: ["Everyone"],
+        domainId: "domain-3"
+      },
+      {
+        id: "serv-2",
+        title: "Customer journey mapping",
+        description: "Charting user touchpoints, emotions, and friction points.",
+        roles: ["Everyone"],
+        domainId: "domain-3"
+      },
+      {
+        id: "serv-3",
+        title: "Service blueprint",
+        description: "Mapping customer views alongside backstage agent and system workflows.",
+        roles: ["Service Designer", "AI PM", "Consultant"],
+        domainId: "domain-3"
+      },
+      {
+        id: "serv-4",
+        title: "User research methods",
+        description: "Applying interviews, surveys, and observation effectively.",
+        roles: ["Service Designer", "AI PM"],
+        domainId: "domain-3"
+      },
+      {
+        id: "serv-5",
+        title: "Usability testing",
+        description: "Observing actual user behavior to identify product pain points.",
+        roles: ["Service Designer", "AI PM", "Engineer"],
+        domainId: "domain-3"
+      },
+      {
+        id: "serv-6",
+        title: "Heuristic evaluation",
+        description: "Auditing interfaces against established usability guidelines.",
+        roles: ["Service Designer", "AI PM", "Engineer"],
+        domainId: "domain-3"
+      },
+      {
+        id: "serv-7",
+        title: "Information architecture",
+        description: "Structuring and naming content for clear discoverability.",
+        roles: ["Service Designer", "AI PM"],
+        domainId: "domain-3"
+      },
+      {
+        id: "serv-8",
+        title: "Behavioural design",
+        description: "Utilizing cognitive defaults and friction ethically.",
+        roles: ["Service Designer", "AI PM", "Consultant"],
+        domainId: "domain-3"
+      },
+      {
+        id: "serv-9",
+        title: "Content design and UX writing",
+        description: "Treating words as interface elements (errors, labels, empty states).",
+        roles: ["Service Designer", "AI PM", "Engineer"],
+        domainId: "domain-3"
+      },
+      {
+        id: "serv-10",
+        title: "Design systems and tokens",
+        description: "Maintaining consistency with shared components and design variables.",
+        roles: ["Engineer", "AI PM"],
+        domainId: "domain-3"
+      },
+      {
+        id: "serv-11",
+        title: "Accessibility (WCAG 2.1 AA)",
+        description: "Ensuring usability for disabled users as our baseline quality standard.",
+        roles: ["Everyone"],
+        domainId: "domain-3"
+      }
+    ]
+  },
+  {
+    id: "domain-4",
+    code: "04",
+    name: "AI",
+    focus: "How modern AI works, how to build with it, and how to keep it safe and useful.",
+    topics: [
+      {
+        id: "ai-1",
+        title: "How LLMs work",
+        description: "Understanding context limits, tokens, temperature, and LLM errors.",
+        roles: ["Everyone"],
+        domainId: "domain-4"
+      },
+      {
+        id: "ai-2",
+        title: "Prompting and context engineering",
+        description: "Providing instructions and context for optimal model performance.",
+        roles: ["Everyone"],
+        domainId: "domain-4"
+      },
+      {
+        id: "ai-3",
+        title: "Spec-driven development",
+        description: "Writing executable specifications for agents.",
+        roles: ["Everyone"],
+        domainId: "domain-4"
+      },
+      {
+        id: "ai-4",
+        title: "AI agents and tool use",
+        description: "Building multi-step planning models.",
+        roles: ["Everyone"],
+        domainId: "domain-4"
+      },
+      {
+        id: "ai-5",
+        title: "Agent orchestration",
+        description: "Coordinating multi-agent pipelines like MADP.",
+        roles: ["AI PM", "Engineer", "Service Designer"],
+        domainId: "domain-4"
+      },
+      {
+        id: "ai-6",
+        title: "Model Context Protocol (MCP)",
+        description: "Connecting agents to external tools and data sources.",
+        roles: ["Engineer", "AI PM"],
+        domainId: "domain-4"
+      },
+      {
+        id: "ai-7",
+        title: "RAG",
+        description: "Grounding answers using proprietary corporate documentation.",
+        roles: ["AI PM", "Engineer", "Service Designer"],
+        domainId: "domain-4"
+      },
+      {
+        id: "ai-8",
+        title: "Embeddings and vector search",
+        description: "Searching semantic meaning through numerical text representations.",
+        roles: ["Engineer"],
+        domainId: "domain-4"
+      },
+      {
+        id: "ai-9",
+        title: "Evaluations",
+        description: "Testing AI performance systematically rather than anecdotally.",
+        roles: ["AI PM", "Engineer"],
+        domainId: "domain-4"
+      },
+      {
+        id: "ai-10",
+        title: "Human-in-the-loop",
+        description: "Designing oversight, approval, and correction mechanisms.",
+        roles: ["Service Designer", "AI PM", "Engineer"],
+        domainId: "domain-4"
+      },
+      {
+        id: "ai-11",
+        title: "Copilot vs agent patterns",
+        description: "Choosing between assistive support and autonomous actions.",
+        roles: ["Service Designer", "AI PM", "Consultant"],
+        domainId: "domain-4"
+      },
+      {
+        id: "ai-12",
+        title: "Prompting, RAG or fine-tuning",
+        description: "Selecting cost-effective technical strategies.",
+        roles: ["AI PM", "Engineer"],
+        domainId: "domain-4"
+      },
+      {
+        id: "ai-13",
+        title: "AI governance and the EU AI Act",
+        description: "Managing legal risk, transparency, and accountability.",
+        roles: ["Consultant", "Service Designer", "AI PM"],
+        domainId: "domain-4"
+      },
+      {
+        id: "ai-14",
+        title: "Voice and conversational AI",
+        description: "Designing voice and chat-based experiences.",
+        roles: ["Service Designer", "AI PM", "Engineer"],
+        domainId: "domain-4"
+      }
+    ]
+  },
+  {
+    id: "domain-5",
+    code: "05",
+    name: "Development and technologies",
+    focus: "The stack we build on and the basics of shipping software safely.",
+    topics: [
+      {
+        id: "dev-1",
+        title: "Git and pull requests",
+        description: "Managing code via branching, reviews, and merges.",
+        roles: ["Everyone"],
+        domainId: "domain-5"
+      },
+      {
+        id: "dev-2",
+        title: "Next.js App Router",
+        description: "Leveraging server components, routing, and rendering patterns.",
+        roles: ["Engineer"],
+        domainId: "domain-5"
+      },
+      {
+        id: "dev-3",
+        title: "TypeScript",
+        description: "Catching bugs early using typed JavaScript.",
+        roles: ["Engineer"],
+        domainId: "domain-5"
+      },
+      {
+        id: "dev-4",
+        title: "Tailwind CSS",
+        description: "Implementing utility-first styling mapped to design tokens.",
+        roles: ["Engineer"],
+        domainId: "domain-5"
+      },
+      {
+        id: "dev-5",
+        title: "shadcn/ui and component libraries",
+        description: "Utilizing customisable, copy-in component frameworks.",
+        roles: ["Engineer", "AI PM"],
+        domainId: "domain-5"
+      },
+      {
+        id: "dev-6",
+        title: "SELISE Blocks and Blocks CMS",
+        description: "Utilizing our primary platform for app and site delivery.",
+        roles: ["Everyone"],
+        domainId: "domain-5"
+      },
+      {
+        id: "dev-7",
+        title: "Headless CMS and content modelling",
+        description: "Structuring modular, reusable content types.",
+        roles: ["Engineer", "AI PM", "Service Designer"],
+        domainId: "domain-5"
+      },
+      {
+        id: "dev-8",
+        title: "APIs and webhooks",
+        description: "Connecting disparate systems via REST and webhooks.",
+        roles: ["Engineer", "AI PM"],
+        domainId: "domain-5"
+      },
+      {
+        id: "dev-9",
+        title: "Authentication and SSO",
+        description: "Implementing OpenID Connect, OAuth, and single sign-on.",
+        roles: ["Engineer", "AI PM"],
+        domainId: "domain-5"
+      },
+      {
+        id: "dev-10",
+        title: "Playwright end-to-end testing",
+        description: "Automating user acceptance journeys.",
+        roles: ["Engineer", "AI PM"],
+        domainId: "domain-5"
+      },
+      {
+        id: "dev-11",
+        title: "CI/CD and preview deployments",
+        description: "Automating build, test, and release cycles.",
+        roles: ["Engineer"],
+        domainId: "domain-5"
+      },
+      {
+        id: "dev-12",
+        title: "Web performance",
+        description: "Optimizing Core Web Vitals for speed and conversion.",
+        roles: ["Engineer"],
+        domainId: "domain-5"
+      },
+      {
+        id: "dev-13",
+        title: "Hosting, domains, DNS and SSL",
+        description: "Securing and maintaining application accessibility.",
+        roles: ["Engineer"],
+        domainId: "domain-5"
+      }
+    ]
+  },
+  {
+    id: "domain-6",
+    code: "06",
+    name: "Data and analytics",
+    focus: "Measuring what happens so decisions rest on evidence.",
+    topics: [
+      {
+        id: "data-1",
+        title: "Event tracking and analytics setup",
+        description: "Defining and triggering critical telemetry events.",
+        roles: ["Engineer", "AI PM"],
+        domainId: "domain-6"
+      },
+      {
+        id: "data-2",
+        title: "Funnels and cohorts",
+        description: "Analyzing user drop-offs and behavioral trends over time.",
+        roles: ["AI PM", "Service Designer", "Consultant"],
+        domainId: "domain-6"
+      },
+      {
+        id: "data-3",
+        title: "Dashboards and KPIs",
+        description: "Clear visualization of essential metrics.",
+        roles: ["AI PM", "Consultant"],
+        domainId: "domain-6"
+      },
+      {
+        id: "data-4",
+        title: "SQL basics",
+        description: "Performing independent database queries.",
+        roles: ["AI PM", "Engineer"],
+        domainId: "domain-6"
+      },
+      {
+        id: "data-5",
+        title: "Consent and privacy in analytics",
+        description: "Managing cookie consent and data collection limits.",
+        roles: ["Engineer", "AI PM", "Consultant"],
+        domainId: "domain-6"
+      }
+    ]
+  },
+  {
+    id: "domain-7",
+    code: "07",
+    name: "Growth and marketing",
+    focus: "Getting the products we build found, chosen and used.",
+    topics: [
+      {
+        id: "growth-1",
+        title: "SEO fundamentals",
+        description: "Optimizing technical, on-page, and content visibility.",
+        roles: ["Engineer", "AI PM", "Consultant"],
+        domainId: "domain-7"
+      },
+      {
+        id: "growth-2",
+        title: "GEO",
+        description: "Making sites discoverable and citable by AI search assistants.",
+        roles: ["Engineer", "AI PM", "Consultant"],
+        domainId: "domain-7"
+      },
+      {
+        id: "growth-3",
+        title: "Conversion rate optimisation",
+        description: "Removing conversion bottlenecks.",
+        roles: ["AI PM", "Service Designer", "Engineer"],
+        domainId: "domain-7"
+      },
+      {
+        id: "growth-4",
+        title: "Ecommerce and checkout UX",
+        description: "Designing effective carts, product pages, and checkout flows.",
+        roles: ["AI PM", "Service Designer", "Engineer"],
+        domainId: "domain-7"
+      },
+      {
+        id: "growth-5",
+        title: "Positioning and messaging",
+        description: "Articulating target audiences and unique value propositions.",
+        roles: ["Consultant", "AI PM"],
+        domainId: "domain-7"
+      },
+      {
+        id: "growth-6",
+        title: "Case studies",
+        description: "Documenting wins to secure future clients.",
+        roles: ["Consultant", "Service Designer"],
+        domainId: "domain-7"
+      }
+    ]
+  },
+  {
+    id: "domain-8",
+    code: "08",
+    name: "Security, privacy and compliance",
+    focus: "Protecting clients, users and SELISE while we move fast.",
+    topics: [
+      {
+        id: "sec-1",
+        title: "Data protection law",
+        description: "Adhering to GDPR, nFADP, and local regulations.",
+        roles: ["Everyone"],
+        domainId: "domain-8"
+      },
+      {
+        id: "sec-2",
+        title: "Data processing agreements",
+        description: "Governing personal data handling contractually.",
+        roles: ["Consultant", "AI PM"],
+        domainId: "domain-8"
+      },
+      {
+        id: "sec-3",
+        title: "OWASP Top 10",
+        description: "Preventing common web application vulnerabilities.",
+        roles: ["Engineer"],
+        domainId: "domain-8"
+      },
+      {
+        id: "sec-4",
+        title: "Secrets and credentials handling",
+        description: "Securing secrets in vaults and avoiding plain-text exposure.",
+        roles: ["Everyone"],
+        domainId: "domain-8"
+      },
+      {
+        id: "sec-5",
+        title: "ITIL and SLA basics",
+        description: "Managing support metrics and incident response.",
+        roles: ["Consultant", "Service Designer", "Engineer"],
+        domainId: "domain-8"
+      },
+      {
+        id: "sec-6",
+        title: "Licensing of assets",
+        description: "Verifying licenses for fonts, code, icons, and AI media.",
+        roles: ["Everyone"],
+        domainId: "domain-8"
+      }
+    ]
+  },
+  {
+    id: "domain-9",
+    code: "09",
+    name: "Consulting and communication",
+    focus: "The skills that turn good work into decisions and signed proposals.",
+    topics: [
+      {
+        id: "cons-1",
+        title: "Workshop facilitation",
+        description: "Running client sessions that yield actionable decisions.",
+        roles: ["Consultant", "Service Designer", "AI PM"],
+        domainId: "domain-9"
+      },
+      {
+        id: "cons-2",
+        title: "Executive communication",
+        description: "Applying answer-first writing principles for leadership.",
+        roles: ["Everyone"],
+        domainId: "domain-9"
+      },
+      {
+        id: "cons-3",
+        title: "Storytelling with data",
+        description: "Structuring charts and metrics into clear narrative arguments.",
+        roles: ["Consultant", "AI PM"],
+        domainId: "domain-9"
+      },
+      {
+        id: "cons-4",
+        title: "Handling objections",
+        description: "Listening actively and resolving core concerns honestly.",
+        roles: ["Consultant"],
+        domainId: "domain-9"
+      },
+      {
+        id: "cons-5",
+        title: "Estimating agentic delivery",
+        description: "Sizing workflows efficiently when AI assists building.",
+        roles: ["AI PM", "Engineer", "Consultant"],
+        domainId: "domain-9"
+      },
+      {
+        id: "cons-6",
+        title: "Giving and receiving critique",
+        description: "Offering constructive feedback to refine work smoothly.",
+        roles: ["Everyone"],
+        domainId: "domain-9"
+      }
+    ]
+  }
+]

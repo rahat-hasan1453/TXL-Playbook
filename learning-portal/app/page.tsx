@@ -38,6 +38,7 @@ export default function TXLLearningPortal() {
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null)
   const [activeTab, setActiveTab] = useState<"what-to-learn" | "my-notes" | "shared-feed" | "unit-head">("what-to-learn")
   const [selectedRoleTrack, setSelectedRoleTrack] = useState<string>("ALL")
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
   // Curriculum domains state (persisted to localStorage so Unit Head changes persist across reload)
   const [domains, setDomains] = useState<Domain[]>(() => {
@@ -194,120 +195,131 @@ export default function TXLLearningPortal() {
       {/* Top Navigation Bar */}
       <header className="border-b border-zinc-800/80 bg-[#0c0d10]/95 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-blue-400">
+          {/* Left: App Logo, Badge & Chapter Subtitle */}
+          <button
+            onClick={() => setActiveTab("what-to-learn")}
+            className="flex items-center space-x-3 text-left group transition focus:outline-none"
+          >
+            <div className="w-9 h-9 rounded-xl bg-[#121316] border border-zinc-800 flex items-center justify-center text-blue-400 shadow-sm group-hover:border-zinc-700 transition">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-bold text-base text-white tracking-tight flex items-center gap-2">
-                TXL Playbook
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 font-medium border border-zinc-700/60 uppercase">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-sm sm:text-base text-white tracking-tight">
+                  TXL Playbook
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 font-medium border border-zinc-700/40">
                   2026
                 </span>
-              </span>
-              <p className="text-xs text-zinc-400">Chapter 15 · What to Learn</p>
-            </div>
-          </div>
-
-          {/* User Profile & Logout Button */}
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2.5 bg-zinc-900/60 border border-zinc-800 px-3 py-1.5 rounded-lg shadow-sm">
-              <div
-                className="w-7 h-7 rounded-md bg-zinc-800 flex items-center justify-center text-xs font-semibold text-zinc-200 border border-zinc-700/60"
-              >
-                {currentUser?.avatar || (currentUserRole === "UNIT_HEAD" ? "UH" : "RC")}
               </div>
-              <div className="text-left text-xs">
+              <p className="text-[11px] text-zinc-500 font-normal">Chapter 15 · What to Learn</p>
+            </div>
+          </button>
+
+          {/* Right: User Profile Card */}
+          <div className="relative">
+            <button
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="flex items-center space-x-3 bg-[#121316] hover:bg-[#16171b] border border-zinc-800/80 hover:border-zinc-700 px-3 py-2 rounded-xl transition text-left shadow-sm cursor-pointer focus:outline-none"
+            >
+              <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700/60 flex items-center justify-center text-xs font-bold text-zinc-200">
+                {currentUser?.avatar || "MC"}
+              </div>
+              <div>
                 <div className="flex items-center gap-1.5">
-                  <p className="font-semibold text-white leading-tight">
-                    {currentUser?.name || (currentUserRole === "UNIT_HEAD" ? "Lead" : "Learner")}
+                  <p className="font-semibold text-xs text-white leading-tight">
+                    {currentUser?.name || "Mark Casado G"}
                   </p>
-                  <span
-                    className="text-[10px] px-1.5 py-0.5 rounded-md font-medium border bg-zinc-800 text-zinc-300 border-zinc-700/60"
-                  >
+                  <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-zinc-800 text-zinc-300 border border-zinc-700/60">
                     {currentUserRole === "UNIT_HEAD" ? "Unit Head" : "Learner"}
                   </span>
                 </div>
-                <p className="text-[11px] text-zinc-400">
-                  {currentUser?.discipline || (currentUserRole === "UNIT_HEAD" ? "Unit Head / Lead" : "AI Product Manager")}
+                <p className="text-[11px] text-zinc-400 mt-0.5 font-normal leading-tight">
+                  {currentUser?.discipline || "Product Engineer"}
                 </p>
               </div>
-            </div>
-
-            <button
-              onClick={handleLogout}
-              className="px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-medium transition flex items-center gap-1.5"
-              title="Logout from portal"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Logout</span>
             </button>
+
+            {/* Dropdown Menu */}
+            {isUserMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
+                <div className="absolute right-0 mt-2 w-64 bg-[#121316] border border-zinc-800 rounded-xl shadow-2xl p-1.5 z-50 text-xs">
+                  <div className="px-3 py-2 border-b border-zinc-800/80 mb-1">
+                    <p className="font-semibold text-white truncate">{currentUser?.name || "Mark Casado G"}</p>
+                    <p className="text-[11px] text-zinc-400 truncate">{currentUser?.email || "mark.casado@txl.is"}</p>
+                  </div>
+
+                  <button
+                    onClick={() => { setActiveTab("what-to-learn"); setIsUserMenuOpen(false) }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition text-left ${
+                      activeTab === "what-to-learn" ? "bg-zinc-800 text-white" : "text-zinc-300 hover:bg-zinc-800/60"
+                    }`}
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-blue-400" />
+                    <span>What to Learn (Curriculum)</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setActiveTab("my-notes"); setIsUserMenuOpen(false) }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition text-left ${
+                      activeTab === "my-notes" ? "bg-zinc-800 text-white" : "text-zinc-300 hover:bg-zinc-800/60"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-amber-400" />
+                      <span>My Notes</span>
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700/60">
+                      {Object.keys(userNotes).length}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => { setActiveTab("shared-feed"); setIsUserMenuOpen(false) }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition text-left ${
+                      activeTab === "shared-feed" ? "bg-zinc-800 text-white" : "text-zinc-300 hover:bg-zinc-800/60"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Shared Learnings</span>
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700/60">
+                      {sharedLearnings.length}
+                    </span>
+                  </button>
+
+                  {currentUserRole === "UNIT_HEAD" && (
+                    <button
+                      onClick={() => { setActiveTab("unit-head"); setIsUserMenuOpen(false) }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition text-left ${
+                        activeTab === "unit-head" ? "bg-zinc-800 text-white" : "text-zinc-300 hover:bg-zinc-800/60"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <ShieldAlert className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Unit Head Command Center</span>
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-950 text-purple-300 border border-purple-800/50">
+                        Executive
+                      </span>
+                    </button>
+                  )}
+
+                  <div className="border-t border-zinc-800/80 my-1 pt-1" />
+
+                  <button
+                    onClick={() => { setIsUserMenuOpen(false); handleLogout() }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-red-400 hover:bg-red-950/30 transition text-left"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 flex space-x-6 text-sm overflow-x-auto scrollbar-none">
-          <button
-            onClick={() => setActiveTab("what-to-learn")}
-            className={`py-3.5 font-medium border-b-2 transition flex items-center gap-2 whitespace-nowrap text-sm ${
-              activeTab === "what-to-learn"
-                ? "border-blue-500 text-white"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>What to Learn</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700/60 font-medium">
-              Role Tracks
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("my-notes")}
-            className={`py-3.5 font-medium border-b-2 transition flex items-center gap-2 whitespace-nowrap text-sm ${
-              activeTab === "my-notes"
-                ? "border-blue-500 text-white"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>My Notes</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700/60">
-              {Object.keys(userNotes).length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("shared-feed")}
-            className={`py-3.5 font-medium border-b-2 transition flex items-center gap-2 whitespace-nowrap text-sm ${
-              activeTab === "shared-feed"
-                ? "border-blue-500 text-white"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>Shared Learnings</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700/60">
-              {sharedLearnings.length}
-            </span>
-          </button>
-
-          {currentUserRole === "UNIT_HEAD" && (
-            <button
-              onClick={() => setActiveTab("unit-head")}
-              className={`py-3.5 font-medium border-b-2 transition flex items-center gap-2 whitespace-nowrap text-sm ${
-                activeTab === "unit-head"
-                  ? "border-purple-500 text-white"
-                  : "border-transparent text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span>Unit Head Overview</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-950/60 text-purple-300 border border-purple-800/60 font-medium">
-                Executive
-              </span>
-            </button>
-          )}
         </div>
       </header>
 
@@ -330,6 +342,14 @@ export default function TXLLearningPortal() {
         {/* ================= VIEW 2: MY NOTES ================= */}
         {activeTab === "my-notes" && (
           <div className="space-y-6">
+            <button
+              onClick={() => setActiveTab("what-to-learn")}
+              className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition w-fit"
+            >
+              <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+              <span>Back to Curriculum (What to Learn)</span>
+            </button>
+
             <div className="bg-[#121316] p-6 rounded-2xl border border-zinc-800/80 shadow-xl">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[11px] font-medium tracking-wide text-zinc-400 bg-zinc-800/80 px-2.5 py-0.5 rounded-full border border-zinc-700/50">
@@ -415,6 +435,14 @@ export default function TXLLearningPortal() {
         {/* ================= VIEW 3: SHARED FEED ================= */}
         {activeTab === "shared-feed" && (
           <div className="max-w-3xl mx-auto space-y-6">
+            <button
+              onClick={() => setActiveTab("what-to-learn")}
+              className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition w-fit"
+            >
+              <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+              <span>Back to Curriculum (What to Learn)</span>
+            </button>
+
             <div className="bg-[#121316] p-6 rounded-2xl border border-zinc-800/80 shadow-xl">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[11px] font-medium tracking-wide text-zinc-400 bg-zinc-800/80 px-2.5 py-0.5 rounded-full border border-zinc-700/50">
@@ -496,13 +524,23 @@ export default function TXLLearningPortal() {
 
         {/* ================= VIEW 4: UNIT HEAD OVERVIEW & MODULE MANAGEMENT ================= */}
         {activeTab === "unit-head" && currentUserRole === "UNIT_HEAD" && (
-          <UnitHeadManagementView
-            domains={domains}
-            onUpdateDomains={handleUpdateDomains}
-            currentUser={currentUser}
-            currentLearnerProgress={progressState}
-            currentLearnerNotes={userNotes}
-          />
+          <div className="space-y-4">
+            <button
+              onClick={() => setActiveTab("what-to-learn")}
+              className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition w-fit"
+            >
+              <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+              <span>Back to Curriculum (What to Learn)</span>
+            </button>
+
+            <UnitHeadManagementView
+              domains={domains}
+              onUpdateDomains={handleUpdateDomains}
+              currentUser={currentUser}
+              currentLearnerProgress={progressState}
+              currentLearnerNotes={userNotes}
+            />
+          </div>
         )}
       </main>
 

@@ -31,15 +31,35 @@ import {
   LogOut,
 } from "lucide-react"
 import RolePathwaysView, { ROLE_TRACKS } from "@/components/RolePathwaysView"
-
-// Sample team members (Starts empty until learners register)
-const MOCK_TEAM_MEMBERS: Array<{ id: string; name: string; role: string; email: string; avatar: string }> = []
+import UnitHeadManagementView from "@/components/UnitHeadManagementView"
 
 export default function TXLLearningPortal() {
   const router = useRouter()
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null)
   const [activeTab, setActiveTab] = useState<"what-to-learn" | "my-notes" | "shared-feed" | "unit-head">("what-to-learn")
   const [selectedRoleTrack, setSelectedRoleTrack] = useState<string>("ALL")
+
+  // Curriculum domains state (persisted to localStorage so Unit Head changes persist across reload)
+  const [domains, setDomains] = useState<Domain[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("txl_curriculum_domains")
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch (e) {
+          console.error("Failed to parse saved curriculum domains", e)
+        }
+      }
+    }
+    return CURRICULUM_DOMAINS
+  })
+
+  const handleUpdateDomains = (updatedDomains: Domain[]) => {
+    setDomains(updatedDomains)
+    if (typeof window !== "undefined") {
+      localStorage.setItem("txl_curriculum_domains", JSON.stringify(updatedDomains))
+    }
+  }
 
   // Load session from cookie
   useEffect(() => {
@@ -94,20 +114,17 @@ export default function TXLLearningPortal() {
   const [shareDraft, setShareDraft] = useState("")
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
 
-  // Selected member for Unit Head drill-down
-  const [selectedMemberId, setSelectedMemberId] = useState<string>("user-1")
-
   // Total topics calculation
   const totalTopicsCount = useMemo(() => {
-    return CURRICULUM_DOMAINS.reduce((acc, d) => acc + d.topics.length, 0)
-  }, [])
+    return domains.reduce((acc, d) => acc + d.topics.length, 0)
+  }, [domains])
 
   // User completed count
   const completedCount = useMemo(() => {
     return Object.values(progressState).filter((s) => s === "COMPLETED").length
   }, [progressState])
 
-  const completionPercentage = Math.round((completedCount / totalTopicsCount) * 100)
+  const completionPercentage = totalTopicsCount ? Math.round((completedCount / totalTopicsCount) * 100) : 0
 
   // Toggle progress status
   const handleToggleStatus = (topicId: string) => {
@@ -153,7 +170,7 @@ export default function TXLLearningPortal() {
   // Publish Shared Learning
   const handlePublishShare = () => {
     if (activeModalTopic && shareDraft.trim()) {
-      const domain = CURRICULUM_DOMAINS.find((d) => d.id === activeModalTopic.domainId)
+      const domain = domains.find((d) => d.id === activeModalTopic.domainId)
       const newEntry = {
         id: `sh-${Date.now()}`,
         userName: currentUser?.name || (currentUserRole === "UNIT_HEAD" ? "Unit Lead" : "Learner"),
@@ -176,7 +193,7 @@ export default function TXLLearningPortal() {
     <div className="min-h-screen bg-[#0a0a0c] text-zinc-100 flex flex-col font-sans selection:bg-zinc-800 selection:text-white">
       {/* Top Navigation Bar */}
       <header className="border-b border-zinc-800/80 bg-[#0c0d10]/95 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-blue-400">
               <Sparkles className="w-4 h-4" />
@@ -229,7 +246,7 @@ export default function TXLLearningPortal() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-6 text-sm overflow-x-auto scrollbar-none">
+        <div className="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 flex space-x-6 text-sm overflow-x-auto scrollbar-none">
           <button
             onClick={() => setActiveTab("what-to-learn")}
             className={`py-3.5 font-medium border-b-2 transition flex items-center gap-2 whitespace-nowrap text-sm ${
@@ -295,7 +312,7 @@ export default function TXLLearningPortal() {
       </header>
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+      <main className="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         {/* ================= PRIMARY VIEW: WHAT TO LEARN (ROLE TRACKS) ================= */}
         {activeTab === "what-to-learn" && (
           <RolePathwaysView
@@ -306,6 +323,7 @@ export default function TXLLearningPortal() {
             onOpenShare={handleOpenShare}
             activeRoleKey={selectedRoleTrack}
             onRoleChange={setSelectedRoleTrack}
+            domains={domains}
           />
         )}
 
@@ -343,7 +361,7 @@ export default function TXLLearningPortal() {
                 {Object.entries(userNotes).map(([topicId, noteContent]) => {
                   let foundTopic: Topic | undefined
                   let foundDomain: Domain | undefined
-                  for (const d of CURRICULUM_DOMAINS) {
+                  for (const d of domains) {
                     const t = d.topics.find((item) => item.id === topicId)
                     if (t) {
                       foundTopic = t
@@ -476,218 +494,15 @@ export default function TXLLearningPortal() {
           </div>
         )}
 
-        {/* ================= VIEW 4: UNIT HEAD OVERVIEW ================= */}
+        {/* ================= VIEW 4: UNIT HEAD OVERVIEW & MODULE MANAGEMENT ================= */}
         {activeTab === "unit-head" && currentUserRole === "UNIT_HEAD" && (
-          <div className="space-y-6">
-            {/* Header banner */}
-            <div className="bg-[#121316] p-6 sm:p-7 rounded-2xl border border-zinc-800/80 shadow-xl">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-purple-950/60 text-purple-300 text-xs font-medium border border-purple-800/50 flex items-center gap-1">
-                  <ShieldAlert className="w-3.5 h-3.5" /> Executive Command Center
-                </span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">TXL Organizational Capability Matrix</h1>
-              <p className="text-sm text-zinc-400 mt-1 max-w-2xl font-normal">
-                Live visibility into individual and squad maturity across all 82 competencies. Track staffing readiness, identify training deficits, and allocate engineers with high confidence.
-              </p>
-            </div>
-
-            {/* Macro KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm">
-                <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-                  <span>Total Active Learners</span>
-                  <Users className="w-4 h-4 text-blue-400" />
-                </div>
-                <p className="text-2xl font-bold text-white mt-2">{MOCK_TEAM_MEMBERS.length} Members</p>
-                <p className="text-xs text-zinc-500 mt-1">
-                  {MOCK_TEAM_MEMBERS.length === 0 ? "Awaiting member signups" : "Across cross-functional pods"}
-                </p>
-              </div>
-
-              <div className="bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm">
-                <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-                  <span>Org Completion Rate</span>
-                  <TrendingUp className="w-4 h-4 text-emerald-400" />
-                </div>
-                <p className="text-2xl font-bold text-emerald-400 mt-2">
-                  {MOCK_TEAM_MEMBERS.length === 0 ? "0.0%" : `${completionPercentage}%`}
-                </p>
-                <p className="text-xs text-zinc-500 mt-1">Aggregate competency progress</p>
-              </div>
-
-              <div className="bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm">
-                <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-                  <span>Highest Velocity Domain</span>
-                  <Award className="w-4 h-4 text-amber-400" />
-                </div>
-                <p className="text-2xl font-bold text-white mt-2">
-                  {completedCount > 0 ? "Active" : "None yet"}
-                </p>
-                <p className="text-xs text-zinc-500 mt-1">Based on topic completions</p>
-              </div>
-
-              <div className="bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm">
-                <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-                  <span>Deficit Domain (Needs Workshop)</span>
-                  <BarChart3 className="w-4 h-4 text-purple-400" />
-                </div>
-                <p className="text-2xl font-bold text-white mt-2">None detected</p>
-                <p className="text-xs text-zinc-500 mt-1">Based on pod submissions</p>
-              </div>
-            </div>
-
-            {/* Individual Learner Drilldown */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Member Selector List */}
-              <div className="bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm space-y-3">
-                <h3 className="text-sm font-semibold text-white flex items-center justify-between">
-                  <span>Pod Members</span>
-                  <span className="text-xs text-zinc-400 font-normal">Click to audit</span>
-                </h3>
-
-                {MOCK_TEAM_MEMBERS.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-zinc-400 border border-dashed border-zinc-800 rounded-lg">
-                    <UserCheck className="w-8 h-8 text-zinc-600 mx-auto mb-2 opacity-50" />
-                    <p className="font-medium text-zinc-300">No Learners Enrolled Yet</p>
-                    <p className="text-[11px] text-zinc-500 mt-1">Learners will appear here as they register and start curriculum modules.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {MOCK_TEAM_MEMBERS.map((member) => (
-                      <button
-                        key={member.id}
-                        onClick={() => setSelectedMemberId(member.id)}
-                        className={`w-full p-3 rounded-lg border text-left transition flex items-center justify-between ${
-                          selectedMemberId === member.id
-                            ? "bg-zinc-800/90 border-zinc-600 shadow-sm"
-                            : "bg-[#0e0f12] border-zinc-800 hover:border-zinc-700"
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="w-9 h-9 rounded-full bg-zinc-800 text-xs font-semibold text-white flex items-center justify-center border border-zinc-700">
-                            {member.avatar}
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold text-white">{member.name}</p>
-                            <p className="text-[11px] text-zinc-400 font-normal">{member.role}</p>
-                          </div>
-                        </div>
-
-                        <div className="text-right">
-                          <span className="text-xs font-bold text-emerald-400">
-                            {member.id === "user-1" ? `${completionPercentage}%` : "0%"}
-                          </span>
-                          <p className="text-[9px] text-zinc-500 font-normal">Readiness</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Detailed Member Inspection View */}
-              <div className="lg:col-span-2 bg-[#121316] p-6 rounded-xl border border-zinc-800/80 shadow-sm space-y-6">
-                {(() => {
-                  const currentMember =
-                    MOCK_TEAM_MEMBERS.find((m) => m.id === selectedMemberId) || MOCK_TEAM_MEMBERS[0]
-
-                  if (!currentMember) {
-                    return (
-                      <div className="p-12 text-center text-xs text-zinc-400 border border-dashed border-zinc-800 rounded-lg">
-                        <GraduationCap className="w-10 h-10 text-zinc-600 mx-auto mb-3 opacity-50" />
-                        <p className="text-sm font-semibold text-white">Select a Learner to Audit</p>
-                        <p className="text-xs text-zinc-500 mt-1">Audit individual competency readiness and curriculum pacing once team members register.</p>
-                      </div>
-                    )
-                  }
-
-                  return (
-                    <>
-                      <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-base font-semibold text-white">
-                            {currentMember.avatar}
-                          </div>
-                          <div>
-                            <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                              {currentMember.name}
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700/60 font-medium">
-                                {currentMember.role}
-                              </span>
-                            </h3>
-                            <p className="text-xs text-zinc-400 font-normal">{currentMember.email}</p>
-                          </div>
-                        </div>
-
-                        <div className="text-right">
-                          <span className="text-2xl font-bold text-emerald-400">
-                            {currentMember.id === "user-1" ? completedCount : 0}
-                          </span>
-                          <span className="text-xs text-zinc-500 font-normal"> / {totalTopicsCount} topics</span>
-                        </div>
-                      </div>
-
-                      {/* Domain Breakdown for this member */}
-                      <div>
-                        <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
-                          Domain Proficiency Breakdown
-                        </h4>
-                        <div className="space-y-3">
-                          {CURRICULUM_DOMAINS.map((domain) => {
-                            const domainCompleted =
-                              currentMember.id === "user-1"
-                                ? domain.topics.filter((t) => progressState[t.id] === "COMPLETED").length
-                                : Math.floor(domain.topics.length * 0.4)
-                            const domainPct = Math.round((domainCompleted / domain.topics.length) * 100)
-
-                            return (
-                              <div key={domain.id} className="text-xs">
-                                <div className="flex justify-between text-zinc-300 mb-1 font-medium">
-                                  <span>{domain.code} · {domain.name}</span>
-                                  <span className="font-semibold text-emerald-400">
-                                    {domainCompleted}/{domain.topics.length} ({domainPct}%)
-                                  </span>
-                                </div>
-                                <div className="w-full bg-[#0a0a0c] rounded-full h-2 overflow-hidden border border-zinc-800">
-                                  <div
-                                    className="bg-emerald-500 h-full rounded-full transition-all"
-                                    style={{ width: `${domainPct}%` }}
-                                  />
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Recent Notes by this member */}
-                      <div className="pt-4 border-t border-zinc-800">
-                        <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
-                          Recent Implementation Notes
-                        </h4>
-                        {currentMember.id === "user-1" && Object.keys(userNotes).length > 0 ? (
-                          <div className="space-y-2">
-                            {Object.entries(userNotes).map(([tid, note]) => {
-                              const t = CURRICULUM_DOMAINS.flatMap((d) => d.topics).find((i) => i.id === tid)
-                              return (
-                                <div key={tid} className="p-3 rounded-lg bg-[#0a0a0c] border border-zinc-800/80 text-xs">
-                                  <p className="font-semibold text-zinc-200">{t?.title || tid}</p>
-                                  <p className="text-zinc-400 mt-1 font-mono text-[11px]">{note}</p>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-zinc-500 italic">No notes logged yet for this member.</p>
-                        )}
-                      </div>
-                    </>
-                  )
-                })()}
-              </div>
-            </div>
-          </div>
+          <UnitHeadManagementView
+            domains={domains}
+            onUpdateDomains={handleUpdateDomains}
+            currentUser={currentUser}
+            currentLearnerProgress={progressState}
+            currentLearnerNotes={userNotes}
+          />
         )}
       </main>
 

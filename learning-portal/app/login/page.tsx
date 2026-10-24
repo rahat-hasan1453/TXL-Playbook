@@ -165,41 +165,41 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col justify-between p-4 sm:p-8">
+    <div className="min-h-screen bg-[#0a0a0c] text-zinc-100 flex flex-col justify-between p-4 sm:p-8 font-sans selection:bg-zinc-800 selection:text-white">
       {/* Top Header */}
-      <header className="max-w-5xl w-full mx-auto flex items-center justify-between py-4 border-b-2 border-slate-800">
+      <header className="max-w-5xl w-full mx-auto flex items-center justify-between py-4 border-b border-zinc-800/80">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-none bg-[#142617] border-2 border-[#67E14B] flex items-center justify-center shadow-lg shadow-lime-500/20">
-            <Sparkles className="w-5 h-5 text-[#67E14B]" />
+          <div className="w-9 h-9 rounded-xl bg-[#121316] border border-zinc-800 flex items-center justify-center text-blue-400 shadow-sm">
+            <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <span className="font-extrabold text-lg text-white tracking-tight flex items-center gap-2">
-              TXL Playbook{" "}
-              <span className="text-xs px-2 py-0.5 rounded-none bg-[#142617] text-[#7FE866] font-black border border-[#67E14B]/60 uppercase">
+            <span className="font-bold text-base text-white tracking-tight flex items-center gap-2">
+              TXL Playbook
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 font-medium border border-zinc-700/40">
                 2026
               </span>
             </span>
-            <p className="text-xs text-lime-400 font-semibold">Chapter 15 · What to Learn</p>
+            <p className="text-[11px] text-zinc-500 font-normal">Chapter 15 · What to Learn</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-slate-300 font-mono">
-          <Lock className="w-3.5 h-3.5 text-lime-400" />
+        <div className="flex items-center gap-2 text-xs text-zinc-400 font-medium">
+          <Lock className="w-3.5 h-3.5 text-zinc-500" />
           <span>RBAC & Cloud Identity Gateway</span>
         </div>
       </header>
 
       {/* Main Container */}
-      <main className="max-w-xl w-full mx-auto my-8 space-y-6">
+      <main className="max-w-lg w-full mx-auto my-8 space-y-6">
         {/* Title Header */}
         <div className="text-center space-y-2">
-          <span className="inline-block px-3 py-1 bg-[#142617] border border-[#67E14B]/70 text-[#7FE866] text-xs font-black uppercase tracking-wider">
+          <span className="inline-block px-2.5 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700/50 text-zinc-400 text-[11px] font-medium tracking-wide">
             Enterprise Competency Portal
           </span>
-          <h1 className="text-3xl font-black text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
             {authMode === "SIGN_IN" ? "Sign In to Your Workspace" : "Create New Account"}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+          <p className="text-xs sm:text-sm text-zinc-400 max-w-md mx-auto font-normal">
             {authMode === "SIGN_IN"
               ? "Access your personalized curriculum pathways, executive metrics, and team competency feed."
               : "Join the TXL Learning Operating System and track your discipline growth."}
@@ -207,20 +207,20 @@ export default function LoginPage() {
         </div>
 
         {/* Auth Mode Toggle Tabs (Sign In / Sign Up) */}
-        <div className="grid grid-cols-2 bg-[#090d16] border-2 border-slate-800 p-1">
+        <div className="grid grid-cols-2 bg-[#121316] border border-zinc-800/80 p-1 rounded-xl">
           <button
             type="button"
             onClick={() => {
               setAuthMode("SIGN_IN")
               setErrorMsg(null)
             }}
-            className={`py-2.5 text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+            className={`py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${
               authMode === "SIGN_IN"
-                ? "bg-[#67E14B] text-black shadow-lg shadow-lime-500/20"
-                : "text-slate-400 hover:text-white"
+                ? "bg-zinc-800 text-white shadow-sm"
+                : "text-zinc-400 hover:text-zinc-200"
             }`}
           >
-            <LogIn className="w-4 h-4" />
+            <LogIn className="w-3.5 h-3.5" />
             <span>Sign In</span>
           </button>
 
@@ -230,31 +230,31 @@ export default function LoginPage() {
               setAuthMode("SIGN_UP")
               setErrorMsg(null)
             }}
-            className={`py-2.5 text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+            className={`py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${
               authMode === "SIGN_UP"
-                ? "bg-[#67E14B] text-black shadow-lg shadow-lime-500/20"
-                : "text-slate-400 hover:text-white"
+                ? "bg-zinc-800 text-white shadow-sm"
+                : "text-zinc-400 hover:text-zinc-200"
             }`}
           >
-            <UserPlus className="w-4 h-4" />
+            <UserPlus className="w-3.5 h-3.5" />
             <span>Sign Up</span>
           </button>
         </div>
 
         {/* SELISE Blocks Cloud SSO / Signup Option */}
-        <div className="bg-[#142617]/70 border-2 border-[#67E14B] p-4 rounded-none flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+        <div className="bg-[#121316] border border-zinc-800/80 p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center gap-3 text-left">
-            <div className="w-9 h-9 rounded-none bg-[#1a3820] border border-[#67E14B] flex items-center justify-center shrink-0">
-              <Globe2 className="w-4 h-4 text-[#67E14B]" />
+            <div className="w-9 h-9 rounded-lg bg-zinc-800/90 border border-zinc-700/60 flex items-center justify-center text-blue-400 shrink-0">
+              <Globe2 className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] px-1.5 py-0.5 bg-[#67E14B] text-black font-black uppercase">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-950/80 text-blue-300 font-semibold border border-blue-800/50">
                   SELISE Blocks IAM
                 </span>
-                <span className="text-[10px] text-lime-300 font-mono">D5e5c23b</span>
+                <span className="text-[10px] text-zinc-500 font-mono">d5e5c23b</span>
               </div>
-              <p className="text-xs text-white font-bold mt-0.5">
+              <p className="text-xs text-white font-medium mt-0.5">
                 {authMode === "SIGN_IN"
                   ? "Single Sign-On via Blocks Cloud Identity"
                   : "One-Click Registration via Blocks Hosted IAM"}
@@ -266,7 +266,7 @@ export default function LoginPage() {
             type="button"
             onClick={handleBlocksSso}
             disabled={loading}
-            className="w-full sm:w-auto px-4 py-2.5 bg-[#67E14B] hover:bg-[#7FE866] text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shrink-0 transition-colors disabled:opacity-50"
+            className="w-full sm:w-auto px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-xs rounded-lg flex items-center justify-center gap-1.5 shrink-0 transition border border-zinc-700/60 disabled:opacity-50"
           >
             {loading ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -281,28 +281,28 @@ export default function LoginPage() {
 
         {/* Error Alert */}
         {errorMsg && (
-          <div className="p-3 bg-red-950/80 border-2 border-red-500 text-red-300 text-xs flex items-center gap-2">
+          <div className="p-3 bg-red-950/60 border border-red-800/50 text-red-300 text-xs rounded-xl flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {/* Auth Box Container */}
-        <div className="bg-[#0f172a] border-2 border-slate-700 p-6 sm:p-8 rounded-none shadow-2xl">
+        <div className="bg-[#121316] border border-zinc-800/80 p-6 sm:p-7 rounded-2xl shadow-xl">
           {authMode === "SIGN_IN" ? (
             /* ================= SIGN IN FORM ================= */
-            <form onSubmit={handleGeneralLogin} className="space-y-5">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <LogIn className="w-4 h-4 text-lime-400" />
+            <form onSubmit={handleGeneralLogin} className="space-y-4">
+              <div className="border-b border-zinc-800 pb-3">
+                <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <LogIn className="w-3.5 h-3.5 text-zinc-400" />
                   General Credentials Sign In
                 </h3>
               </div>
 
               {/* Email */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-lime-400" />
+                <label className="block text-xs font-medium text-zinc-300 mb-1.5 flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-zinc-400" />
                   Work Email Address
                 </label>
                 <input
@@ -311,14 +311,14 @@ export default function LoginPage() {
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   placeholder="name@selise.ch"
-                  className="w-full bg-[#090d16] border-2 border-slate-700 focus:border-lime-400 rounded-none p-3 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                  className="w-full bg-[#0a0a0c] border border-zinc-800 focus:border-blue-500 rounded-lg p-2.5 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none transition shadow-sm"
                 />
               </div>
 
               {/* Password */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
-                  <KeyRound className="w-3.5 h-3.5 text-lime-400" />
+                <label className="block text-xs font-medium text-zinc-300 mb-1.5 flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-zinc-400" />
                   Password
                 </label>
                 <input
@@ -327,50 +327,50 @@ export default function LoginPage() {
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full bg-[#090d16] border-2 border-slate-700 focus:border-lime-400 rounded-none p-3 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                  className="w-full bg-[#0a0a0c] border border-zinc-800 focus:border-blue-500 rounded-lg p-2.5 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none transition shadow-sm"
                 />
               </div>
 
               {/* Access Role Selector */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
+                <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wider text-[11px]">
                   Operational Workspace Role
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setLoginRole("LEARNER")}
-                    className={`p-3 text-left border-2 rounded-none transition-all flex flex-col justify-between ${
+                    className={`p-3 text-left border rounded-xl transition flex flex-col justify-between ${
                       loginRole === "LEARNER"
-                        ? "bg-[#142617] border-[#67E14B] text-white"
-                        : "bg-[#090d16] border-slate-800 text-slate-400 hover:border-slate-700"
+                        ? "bg-[#16181f] border-zinc-400 text-white ring-1 ring-zinc-400/30 shadow-sm"
+                        : "bg-[#0a0a0c] border-zinc-800 text-zinc-400 hover:border-zinc-700"
                     }`}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="text-xs font-black uppercase text-lime-400 flex items-center gap-1">
-                        <GraduationCap className="w-3.5 h-3.5" /> Learner
+                      <span className="text-xs font-semibold flex items-center gap-1.5">
+                        <GraduationCap className="w-3.5 h-3.5 text-zinc-300" /> Learner
                       </span>
-                      {loginRole === "LEARNER" && <CheckCircle2 className="w-3.5 h-3.5 text-lime-400" />}
+                      {loginRole === "LEARNER" && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
                     </div>
-                    <span className="text-[11px] text-slate-400 mt-1">Curriculum & Personal Notes</span>
+                    <span className="text-[11px] text-zinc-400 mt-1 font-normal">Curriculum & Personal Notes</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setLoginRole("UNIT_HEAD")}
-                    className={`p-3 text-left border-2 rounded-none transition-all flex flex-col justify-between ${
+                    className={`p-3 text-left border rounded-xl transition flex flex-col justify-between ${
                       loginRole === "UNIT_HEAD"
-                        ? "bg-purple-950/60 border-purple-500 text-white"
-                        : "bg-[#090d16] border-slate-800 text-slate-400 hover:border-slate-700"
+                        ? "bg-[#1c1427] border-purple-500 text-white ring-1 ring-purple-500/30 shadow-sm"
+                        : "bg-[#0a0a0c] border-zinc-800 text-zinc-400 hover:border-zinc-700"
                     }`}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="text-xs font-black uppercase text-purple-400 flex items-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5" /> Unit Head
+                      <span className="text-xs font-semibold flex items-center gap-1.5 text-purple-300">
+                        <ShieldCheck className="w-3.5 h-3.5 text-purple-400" /> Unit Head
                       </span>
                       {loginRole === "UNIT_HEAD" && <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />}
                     </div>
-                    <span className="text-[11px] text-slate-400 mt-1">Executive Org Matrix & Auditing</span>
+                    <span className="text-[11px] text-zinc-400 mt-1 font-normal">Executive Org Matrix & Auditing</span>
                   </button>
                 </div>
               </div>
@@ -379,17 +379,17 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 px-4 bg-[#67E14B] hover:bg-[#7FE866] text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition disabled:opacity-50 shadow-lg shadow-lime-500/20"
+                className="w-full py-2.5 px-4 bg-white hover:bg-zinc-200 text-black font-semibold text-xs rounded-lg flex items-center justify-center gap-2 transition disabled:opacity-50 shadow mt-2"
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     Signing In...
                   </span>
                 ) : (
                   <>
                     <span>Enter Learning Portal</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
               </button>
@@ -397,12 +397,12 @@ export default function LoginPage() {
           ) : (
             /* ================= SIGN UP FORM ================= */
             <form onSubmit={handleGeneralSignup} className="space-y-4">
-              <div className="border-b border-slate-800 pb-3">
-                <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <UserPlus className="w-4 h-4 text-lime-400" />
+              <div className="border-b border-zinc-800 pb-3">
+                <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <UserPlus className="w-3.5 h-3.5 text-zinc-400" />
                   Register New Account
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-zinc-400 mt-0.5 font-normal">
                   Set up your profile to sync learning progress across disciplines.
                 </p>
               </div>
@@ -410,7 +410,7 @@ export default function LoginPage() {
               {/* Name Fields */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1 uppercase tracking-wider">
+                  <label className="block text-xs font-medium text-zinc-300 mb-1">
                     First Name
                   </label>
                   <input
@@ -419,11 +419,11 @@ export default function LoginPage() {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     placeholder="e.g. Rahat"
-                    className="w-full bg-[#090d16] border-2 border-slate-700 focus:border-lime-400 rounded-none p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                    className="w-full bg-[#0a0a0c] border border-zinc-800 focus:border-blue-500 rounded-lg p-2.5 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none transition shadow-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1 uppercase tracking-wider">
+                  <label className="block text-xs font-medium text-zinc-300 mb-1">
                     Last Name
                   </label>
                   <input
@@ -432,15 +432,15 @@ export default function LoginPage() {
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     placeholder="e.g. Chowdhury"
-                    className="w-full bg-[#090d16] border-2 border-slate-700 focus:border-lime-400 rounded-none p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                    className="w-full bg-[#0a0a0c] border border-zinc-800 focus:border-blue-500 rounded-lg p-2.5 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none transition shadow-sm"
                   />
                 </div>
               </div>
 
               {/* Email */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1 uppercase tracking-wider flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-lime-400" />
+                <label className="block text-xs font-medium text-zinc-300 mb-1 flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-zinc-400" />
                   Work Email Address
                 </label>
                 <input
@@ -449,14 +449,14 @@ export default function LoginPage() {
                   value={signupEmail}
                   onChange={(e) => setSignupEmail(e.target.value)}
                   placeholder="user@selise.ch"
-                  className="w-full bg-[#090d16] border-2 border-slate-700 focus:border-lime-400 rounded-none p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                  className="w-full bg-[#0a0a0c] border border-zinc-800 focus:border-blue-500 rounded-lg p-2.5 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none transition shadow-sm"
                 />
               </div>
 
               {/* Password */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1 uppercase tracking-wider flex items-center gap-1.5">
-                  <KeyRound className="w-3.5 h-3.5 text-lime-400" />
+                <label className="block text-xs font-medium text-zinc-300 mb-1 flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-zinc-400" />
                   Password (Min 8 Characters)
                 </label>
                 <input
@@ -466,20 +466,20 @@ export default function LoginPage() {
                   value={signupPassword}
                   onChange={(e) => setSignupPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full bg-[#090d16] border-2 border-slate-700 focus:border-lime-400 rounded-none p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                  className="w-full bg-[#0a0a0c] border border-zinc-800 focus:border-blue-500 rounded-lg p-2.5 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none transition shadow-sm"
                 />
               </div>
 
               {/* Discipline and Role */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1 uppercase tracking-wider">
+                  <label className="block text-xs font-medium text-zinc-300 mb-1">
                     Discipline Track
                   </label>
                   <select
                     value={signupDiscipline}
                     onChange={(e) => setSignupDiscipline(e.target.value)}
-                    className="w-full bg-[#090d16] border-2 border-slate-700 focus:border-lime-400 rounded-none p-2.5 text-xs text-white focus:outline-none transition-colors"
+                    className="w-full bg-[#0a0a0c] border border-zinc-800 focus:border-blue-500 rounded-lg p-2.5 text-xs text-zinc-100 focus:outline-none transition shadow-sm"
                   >
                     <option value="Product Engineer">Product Engineer</option>
                     <option value="AI Product Manager">AI Product Manager</option>
@@ -490,34 +490,34 @@ export default function LoginPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1 uppercase tracking-wider">
+                  <label className="block text-xs font-medium text-zinc-300 mb-1">
                     Assigned Role
                   </label>
                   <select
                     value={signupRole}
                     onChange={(e) => setSignupRole(e.target.value as "LEARNER" | "UNIT_HEAD")}
-                    className="w-full bg-[#090d16] border-2 border-slate-700 focus:border-lime-400 rounded-none p-2.5 text-xs text-white focus:outline-none transition-colors"
+                    className="w-full bg-[#0a0a0c] border border-zinc-800 focus:border-blue-500 rounded-lg p-2.5 text-xs text-zinc-100 focus:outline-none transition shadow-sm"
                   >
-                    <option value="LEARNER">Learner (User A)</option>
-                    <option value="UNIT_HEAD">Unit Head (User B)</option>
+                    <option value="LEARNER">Learner</option>
+                    <option value="UNIT_HEAD">Unit Head</option>
                   </select>
                 </div>
               </div>
 
               {/* Register through SELISE Blocks Checkbox Option */}
-              <div className="p-3 bg-[#142617]/50 border border-[#67E14B]/60 rounded-none flex items-start gap-2.5">
+              <div className="p-3 bg-[#0a0a0c] border border-zinc-800 rounded-xl flex items-start gap-2.5">
                 <input
                   type="checkbox"
                   id="viaBlocks"
                   checked={registerViaBlocks}
                   onChange={(e) => setRegisterViaBlocks(e.target.checked)}
-                  className="mt-0.5 accent-[#67E14B] rounded-none cursor-pointer"
+                  className="mt-0.5 accent-blue-500 rounded cursor-pointer"
                 />
-                <label htmlFor="viaBlocks" className="text-xs text-slate-300 cursor-pointer select-none">
-                  <span className="font-bold text-white block">
-                    Register through SELISE Blocks IAM (Project D5e5c23b)
+                <label htmlFor="viaBlocks" className="text-xs text-zinc-300 cursor-pointer select-none">
+                  <span className="font-semibold text-white block">
+                    Register through SELISE Blocks IAM (Project d5e5c23b)
                   </span>
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] text-zinc-400">
                     Creates an enterprise identity record on Blocks Cloud platform with verified permissions.
                   </span>
                 </label>
@@ -527,17 +527,17 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 px-4 bg-[#67E14B] hover:bg-[#7FE866] text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition disabled:opacity-50 shadow-lg shadow-lime-500/20"
+                className="w-full py-2.5 px-4 bg-white hover:bg-zinc-200 text-black font-semibold text-xs rounded-lg flex items-center justify-center gap-2 transition disabled:opacity-50 shadow mt-2"
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     Creating Account...
                   </span>
                 ) : (
                   <>
                     <span>Create Account & Enter Portal</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
               </button>
@@ -545,9 +545,9 @@ export default function LoginPage() {
           )}
 
           {/* Bottom Switch Link */}
-          <div className="pt-5 border-t border-slate-800 text-center mt-5">
+          <div className="pt-4 border-t border-zinc-800 text-center mt-5">
             {authMode === "SIGN_IN" ? (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-zinc-400">
                 Don&apos;t have an account yet?{" "}
                 <button
                   type="button"
@@ -555,13 +555,13 @@ export default function LoginPage() {
                     setAuthMode("SIGN_UP")
                     setErrorMsg(null)
                   }}
-                  className="text-lime-400 font-bold hover:underline ml-1"
+                  className="text-white font-semibold hover:underline ml-1"
                 >
                   Create one now
                 </button>
               </p>
             ) : (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-zinc-400">
                 Already registered with an account?{" "}
                 <button
                   type="button"
@@ -569,7 +569,7 @@ export default function LoginPage() {
                     setAuthMode("SIGN_IN")
                     setErrorMsg(null)
                   }}
-                  className="text-lime-400 font-bold hover:underline ml-1"
+                  className="text-white font-semibold hover:underline ml-1"
                 >
                   Sign in here
                 </button>
@@ -580,7 +580,7 @@ export default function LoginPage() {
       </main>
 
       {/* Footer */}
-      <footer className="max-w-5xl w-full mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 border-t border-slate-800 pt-4 gap-2">
+      <footer className="max-w-5xl w-full mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-500 border-t border-zinc-800/80 pt-4 gap-2">
         <span>TXL Playbook 2026 · Chapter 15 Competency Operating System</span>
         <span>Security: Strict Enterprise Role Isolation & Blocks IAM</span>
       </footer>

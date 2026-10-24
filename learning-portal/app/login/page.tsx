@@ -297,25 +297,6 @@ export default function LoginPage() {
                   <LogIn className="w-4 h-4 text-lime-400" />
                   General Credentials Sign In
                 </h3>
-
-                {/* Preset Fast Picker */}
-                <div className="flex items-center gap-1.5 text-[11px]">
-                  <span className="text-slate-400">Quick Test:</span>
-                  <button
-                    type="button"
-                    onClick={() => fillPreset("LEARNER")}
-                    className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-lime-400 border border-slate-700 font-bold"
-                  >
-                    Learner
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillPreset("UNIT_HEAD")}
-                    className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-purple-400 border border-slate-700 font-bold"
-                  >
-                    Unit Head
-                  </button>
-                </div>
               </div>
 
               {/* Email */}

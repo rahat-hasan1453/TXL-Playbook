@@ -32,13 +32,8 @@ import {
 } from "lucide-react"
 import RolePathwaysView, { ROLE_TRACKS } from "@/components/RolePathwaysView"
 
-// Sample team members for Unit Head scenario
-const MOCK_TEAM_MEMBERS = [
-  { id: "user-1", name: "Rahat Chowdhury", role: "AI PM", email: "rahat@selise.ch", avatar: "RC" },
-  { id: "user-2", name: "Alex Mercer", role: "Product Engineer", email: "alex@selise.ch", avatar: "AM" },
-  { id: "user-3", name: "Priya Sharma", role: "Service Designer", email: "priya@selise.ch", avatar: "PS" },
-  { id: "user-4", name: "Michael Vance", role: "Product Consultant", email: "michael@selise.ch", avatar: "MV" },
-]
+// Sample team members (Starts empty until learners register)
+const MOCK_TEAM_MEMBERS: Array<{ id: string; name: string; role: string; email: string; avatar: string }> = []
 
 export default function TXLLearningPortal() {
   const router = useRouter()
@@ -76,19 +71,10 @@ export default function TXLLearningPortal() {
   }
 
   // User progress data (Topic ID -> 'COMPLETED' | 'IN_PROGRESS' | 'NOT_STARTED')
-  const [progressState, setProgressState] = useState<Record<string, "COMPLETED" | "IN_PROGRESS">>({
-    "biz-1": "COMPLETED",
-    "prod-1": "COMPLETED",
-    "ai-1": "COMPLETED",
-    "ai-2": "IN_PROGRESS",
-    "dev-1": "COMPLETED",
-  })
+  const [progressState, setProgressState] = useState<Record<string, "COMPLETED" | "IN_PROGRESS">>({})
 
   // User personal notes per topic (Topic ID -> note string)
-  const [userNotes, setUserNotes] = useState<Record<string, string>>({
-    "ai-1": "Key insight: Context limits and temperature dictate hallucinations. Always ground with clear examples.",
-    "biz-1": "Need to align value proposition with client's actual pain points rather than features.",
-  })
+  const [userNotes, setUserNotes] = useState<Record<string, string>>({})
 
   // Shared learnings feed
   const [sharedLearnings, setSharedLearnings] = useState<Array<{
@@ -100,28 +86,7 @@ export default function TXLLearningPortal() {
     note: string
     timestamp: string
     likes: number
-  }>>([
-    {
-      id: "sh-1",
-      userName: "Rahat Chowdhury",
-      userRole: "AI PM",
-      topicTitle: "Spec-driven development",
-      domainName: "AI",
-      note: "Learned how writing executable markdown specifications allows AI agents to scaffold reliable components with zero ambiguity.",
-      timestamp: "2 hours ago",
-      likes: 5,
-    },
-    {
-      id: "sh-2",
-      userName: "Alex Mercer",
-      userRole: "Product Engineer",
-      topicTitle: "Next.js App Router",
-      domainName: "Development and technologies",
-      note: "Server Components provide massive performance wins by shipping 0kB bundle to the client for read-heavy screens.",
-      timestamp: "Yesterday",
-      likes: 8,
-    }
-  ])
+  }>>([])
 
   // Active modal for taking notes or sharing
   const [activeModalTopic, setActiveModalTopic] = useState<Topic | null>(null)
@@ -191,8 +156,8 @@ export default function TXLLearningPortal() {
       const domain = CURRICULUM_DOMAINS.find((d) => d.id === activeModalTopic.domainId)
       const newEntry = {
         id: `sh-${Date.now()}`,
-        userName: currentUserRole === "UNIT_HEAD" ? "Sarah Jenkins (Lead)" : "Rahat Chowdhury",
-        userRole: currentUserRole === "UNIT_HEAD" ? "Unit Head" : "AI PM",
+        userName: currentUser?.name || (currentUserRole === "UNIT_HEAD" ? "Unit Lead" : "Learner"),
+        userRole: currentUser?.discipline || (currentUserRole === "UNIT_HEAD" ? "Unit Head" : "Learner"),
         topicTitle: activeModalTopic.title,
         domainName: domain?.name || "Curriculum",
         note: shareDraft,
@@ -458,55 +423,65 @@ export default function TXLLearningPortal() {
             </div>
 
             <div className="space-y-4">
-              {sharedLearnings.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-5 rounded-none border-2 border-slate-700 bg-[#0f172a] shadow-xl space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-9 h-9 rounded-none bg-[#142617] border border-[#67E14B]/70 flex items-center justify-center text-xs font-black text-[#7FE866]">
-                        {item.userName.slice(0, 2).toUpperCase()}
+              {sharedLearnings.length === 0 ? (
+                <div className="bg-[#0f172a] p-12 text-center rounded-none border-2 border-dashed border-slate-700">
+                  <MessageSquare className="w-12 h-12 text-slate-500 mx-auto mb-3" />
+                  <h3 className="text-base font-extrabold text-white">No Shared Notes Yet</h3>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                    When you or team members share notes from your curriculum topics, they will appear here in the team feed.
+                  </p>
+                </div>
+              ) : (
+                sharedLearnings.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-5 rounded-none border-2 border-slate-700 bg-[#0f172a] shadow-xl space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-9 h-9 rounded-none bg-[#142617] border border-[#67E14B]/70 flex items-center justify-center text-xs font-black text-[#7FE866]">
+                          {item.userName.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-xs font-extrabold text-white leading-tight">
+                            {item.userName}
+                            <span className="ml-2 text-[10px] font-semibold text-lime-400">
+                              ({item.userRole})
+                            </span>
+                          </p>
+                          <p className="text-[10px] text-slate-400 font-medium">{item.timestamp}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs font-extrabold text-white leading-tight">
-                          {item.userName}
-                          <span className="ml-2 text-[10px] font-semibold text-lime-400">
-                            ({item.userRole})
-                          </span>
-                        </p>
-                        <p className="text-[10px] text-slate-400 font-medium">{item.timestamp}</p>
-                      </div>
+
+                      <span className="text-[11px] px-2.5 py-0.5 rounded-none bg-[#142617] text-[#7FE866] border border-[#67E14B]/60 font-bold">
+                        {item.domainName}
+                      </span>
                     </div>
 
-                    <span className="text-[11px] px-2.5 py-0.5 rounded-none bg-[#142617] text-[#7FE866] border border-[#67E14B]/60 font-bold">
-                      {item.domainName}
-                    </span>
-                  </div>
+                    <div className="bg-[#090d16] p-4 rounded-none border border-slate-800">
+                      <p className="text-xs font-bold text-lime-400 mb-1">
+                        Learned: <span className="text-white">{item.topicTitle}</span>
+                      </p>
+                      <p className="text-xs text-slate-100 leading-relaxed font-normal">{item.note}</p>
+                    </div>
 
-                  <div className="bg-[#090d16] p-4 rounded-none border border-slate-800">
-                    <p className="text-xs font-bold text-lime-400 mb-1">
-                      Learned: <span className="text-white">{item.topicTitle}</span>
-                    </p>
-                    <p className="text-xs text-slate-100 leading-relaxed font-normal">{item.note}</p>
+                    <div className="flex items-center justify-between text-xs text-slate-300 pt-1">
+                      <button
+                        onClick={() => {
+                          setSharedLearnings((prev) =>
+                            prev.map((l) => (l.id === item.id ? { ...l, likes: l.likes + 1 } : l))
+                          )
+                        }}
+                        className="hover:text-pink-400 transition flex items-center gap-1.5 font-bold bg-slate-900 px-3 py-1.5 rounded-none border border-slate-700"
+                      >
+                        <Heart className="w-3.5 h-3.5 text-pink-400 fill-pink-400/30" />
+                        <span>{item.likes} Likes</span>
+                      </button>
+                      <span className="text-[11px] text-slate-400 font-semibold">TXL Playbook Knowledge Base</span>
+                    </div>
                   </div>
-
-                  <div className="flex items-center justify-between text-xs text-slate-300 pt-1">
-                    <button
-                      onClick={() => {
-                        setSharedLearnings((prev) =>
-                          prev.map((l) => (l.id === item.id ? { ...l, likes: l.likes + 1 } : l))
-                        )
-                      }}
-                      className="hover:text-pink-400 transition flex items-center gap-1.5 font-bold bg-slate-900 px-3 py-1.5 rounded-none border border-slate-700"
-                    >
-                      <Heart className="w-3.5 h-3.5 text-pink-400 fill-pink-400/30" />
-                      <span>{item.likes} Likes</span>
-                    </button>
-                    <span className="text-[11px] text-slate-400 font-semibold">TXL Playbook Knowledge Base</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         )}
@@ -534,8 +509,10 @@ export default function TXLLearningPortal() {
                   <span>Total Active Learners</span>
                   <Users className="w-4 h-4 text-blue-400" />
                 </div>
-                <p className="text-2xl font-black text-white mt-2">12 Members</p>
-                <p className="text-xs text-[#7FE866] font-bold mt-1">Across 4 cross-functional pods</p>
+                <p className="text-2xl font-black text-white mt-2">{MOCK_TEAM_MEMBERS.length} Members</p>
+                <p className="text-xs text-slate-400 font-bold mt-1">
+                  {MOCK_TEAM_MEMBERS.length === 0 ? "Awaiting member signups" : "Across cross-functional pods"}
+                </p>
               </div>
 
               <div className="bg-[#0f172a] p-5 rounded-none border-2 border-slate-700 shadow-xl">
@@ -543,8 +520,10 @@ export default function TXLLearningPortal() {
                   <span>Org Completion Rate</span>
                   <TrendingUp className="w-4 h-4 text-lime-400" />
                 </div>
-                <p className="text-2xl font-black text-lime-400 mt-2">48.2%</p>
-                <p className="text-xs text-slate-300 font-semibold mt-1">+14% velocity this month</p>
+                <p className="text-2xl font-black text-lime-400 mt-2">
+                  {MOCK_TEAM_MEMBERS.length === 0 ? "0.0%" : `${completionPercentage}%`}
+                </p>
+                <p className="text-xs text-slate-400 font-semibold mt-1">Aggregate competency progress</p>
               </div>
 
               <div className="bg-[#0f172a] p-5 rounded-none border-2 border-slate-700 shadow-xl">
@@ -552,8 +531,10 @@ export default function TXLLearningPortal() {
                   <span>Highest Velocity Domain</span>
                   <Award className="w-4 h-4 text-amber-400" />
                 </div>
-                <p className="text-2xl font-black text-white mt-2">04 · AI</p>
-                <p className="text-xs text-amber-400 font-bold mt-1">72% baseline completed</p>
+                <p className="text-2xl font-black text-white mt-2">
+                  {completedCount > 0 ? "Active" : "None yet"}
+                </p>
+                <p className="text-xs text-slate-400 font-bold mt-1">Based on topic completions</p>
               </div>
 
               <div className="bg-[#0f172a] p-5 rounded-none border-2 border-slate-700 shadow-xl">
@@ -561,8 +542,8 @@ export default function TXLLearningPortal() {
                   <span>Deficit Domain (Needs Workshop)</span>
                   <BarChart3 className="w-4 h-4 text-purple-400" />
                 </div>
-                <p className="text-2xl font-black text-white mt-2">08 · Security</p>
-                <p className="text-xs text-purple-300 font-bold mt-1">28% completion across pods</p>
+                <p className="text-2xl font-black text-white mt-2">None detected</p>
+                <p className="text-xs text-slate-400 font-bold mt-1">Based on pod submissions</p>
               </div>
             </div>
 
@@ -575,36 +556,44 @@ export default function TXLLearningPortal() {
                   <span className="text-xs text-slate-400 font-normal">Click to audit</span>
                 </h3>
 
-                <div className="space-y-2">
-                  {MOCK_TEAM_MEMBERS.map((member) => (
-                    <button
-                      key={member.id}
-                      onClick={() => setSelectedMemberId(member.id)}
-                      className={`w-full p-3 rounded-none border-2 text-left transition flex items-center justify-between ${
-                        selectedMemberId === member.id
-                          ? "bg-[#142617] border-[#67E14B] shadow-md shadow-lime-500/20"
-                          : "bg-[#090d16] border-slate-800 hover:border-slate-700"
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-9 h-9 rounded-none bg-slate-800 text-xs font-black text-white flex items-center justify-center border border-slate-700">
-                          {member.avatar}
+                {MOCK_TEAM_MEMBERS.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-slate-400 border border-dashed border-slate-800">
+                    <UserCheck className="w-8 h-8 text-slate-500 mx-auto mb-2 opacity-50" />
+                    <p className="font-semibold text-slate-300">No Learners Enrolled Yet</p>
+                    <p className="text-[11px] text-slate-500 mt-1">Learners will appear here as they register and start curriculum modules.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {MOCK_TEAM_MEMBERS.map((member) => (
+                      <button
+                        key={member.id}
+                        onClick={() => setSelectedMemberId(member.id)}
+                        className={`w-full p-3 rounded-none border-2 text-left transition flex items-center justify-between ${
+                          selectedMemberId === member.id
+                            ? "bg-[#142617] border-[#67E14B] shadow-md shadow-lime-500/20"
+                            : "bg-[#090d16] border-slate-800 hover:border-slate-700"
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-9 h-9 rounded-none bg-slate-800 text-xs font-black text-white flex items-center justify-center border border-slate-700">
+                            {member.avatar}
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-white">{member.name}</p>
+                            <p className="text-[11px] text-lime-400 font-medium">{member.role}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs font-bold text-white">{member.name}</p>
-                          <p className="text-[11px] text-lime-400 font-medium">{member.role}</p>
-                        </div>
-                      </div>
 
-                      <div className="text-right">
-                        <span className="text-xs font-black text-lime-400">
-                          {member.id === "user-1" ? `${completionPercentage}%` : "35%"}
-                        </span>
-                        <p className="text-[9px] text-slate-400 font-semibold">Readiness</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                        <div className="text-right">
+                          <span className="text-xs font-black text-lime-400">
+                            {member.id === "user-1" ? `${completionPercentage}%` : "0%"}
+                          </span>
+                          <p className="text-[9px] text-slate-400 font-semibold">Readiness</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Detailed Member Inspection View */}
@@ -612,6 +601,16 @@ export default function TXLLearningPortal() {
                 {(() => {
                   const currentMember =
                     MOCK_TEAM_MEMBERS.find((m) => m.id === selectedMemberId) || MOCK_TEAM_MEMBERS[0]
+
+                  if (!currentMember) {
+                    return (
+                      <div className="p-12 text-center text-xs text-slate-400 border border-dashed border-slate-800">
+                        <GraduationCap className="w-10 h-10 text-slate-500 mx-auto mb-3 opacity-50" />
+                        <p className="text-sm font-bold text-white">Select a Learner to Audit</p>
+                        <p className="text-xs text-slate-400 mt-1">Audit individual competency readiness and curriculum pacing once team members register.</p>
+                      </div>
+                    )
+                  }
 
                   return (
                     <>
@@ -633,7 +632,7 @@ export default function TXLLearningPortal() {
 
                         <div className="text-right">
                           <span className="text-2xl font-black text-lime-400">
-                            {currentMember.id === "user-1" ? completedCount : 29}
+                            {currentMember.id === "user-1" ? completedCount : 0}
                           </span>
                           <span className="text-xs text-slate-400 font-bold"> / {totalTopicsCount} topics</span>
                         </div>

@@ -48,49 +48,49 @@ export interface RoleTheme {
 
 export const ROLE_THEMES: Record<string, RoleTheme> = {
   ALL: {
-    primary: "#38BDF8",       // Electric Sky Blue
-    activeBg: "bg-[#38BDF8]",
-    activeText: "text-black",
-    activeBorder: "border-[#38BDF8]",
-    badgeBg: "#0b1e33",
-    badgeText: "#7DD3FC",
-    badgeBorder: "#38BDF880",
+    primary: "#60A5FA",       // Soft Blue
+    activeBg: "bg-blue-600",
+    activeText: "text-white",
+    activeBorder: "border-blue-500",
+    badgeBg: "#172554",
+    badgeText: "#93C5FD",
+    badgeBorder: "rgba(59, 130, 246, 0.3)",
   },
   Consultant: {
-    primary: "#F59E0B",       // Warm Amber / Gold
-    activeBg: "bg-[#F59E0B]",
-    activeText: "text-black",
-    activeBorder: "border-[#F59E0B]",
-    badgeBg: "#281b0a",
-    badgeText: "#FBBF24",
-    badgeBorder: "#F59E0B80",
+    primary: "#FBBF24",       // Warm Amber
+    activeBg: "bg-amber-600",
+    activeText: "text-white",
+    activeBorder: "border-amber-500",
+    badgeBg: "#451a03",
+    badgeText: "#FCD34D",
+    badgeBorder: "rgba(245, 158, 11, 0.3)",
   },
   "Service Designer": {
-    primary: "#E879F9",       // Electric Fuchsia / Purple
-    activeBg: "bg-[#E879F9]",
-    activeText: "text-black",
-    activeBorder: "border-[#E879F9]",
-    badgeBg: "#290d2e",
-    badgeText: "#F0ABFC",
-    badgeBorder: "#E879F980",
+    primary: "#C084FC",       // Soft Purple
+    activeBg: "bg-purple-600",
+    activeText: "text-white",
+    activeBorder: "border-purple-500",
+    badgeBg: "#3b0764",
+    badgeText: "#E9D5FF",
+    badgeBorder: "rgba(168, 85, 247, 0.3)",
   },
   "AI PM": {
-    primary: "#06B6D4",       // Electric Cyan
-    activeBg: "bg-[#06B6D4]",
-    activeText: "text-black",
-    activeBorder: "border-[#06B6D4]",
-    badgeBg: "#08232c",
-    badgeText: "#67E8F9",
-    badgeBorder: "#06B6D480",
+    primary: "#38BDF8",       // Subtle Cyan / Sky
+    activeBg: "bg-cyan-600",
+    activeText: "text-white",
+    activeBorder: "border-cyan-500",
+    badgeBg: "#083344",
+    badgeText: "#7DD3FC",
+    badgeBorder: "rgba(6, 182, 212, 0.3)",
   },
   Engineer: {
-    primary: "#67E14B",       // Neon Terminal Green
-    activeBg: "bg-[#67E14B]",
-    activeText: "text-black",
-    activeBorder: "border-[#67E14B]",
-    badgeBg: "#142617",
-    badgeText: "#7FE866",
-    badgeBorder: "#67E14B80",
+    primary: "#34D399",       // Refined Emerald
+    activeBg: "bg-emerald-600",
+    activeText: "text-white",
+    activeBorder: "border-emerald-500",
+    badgeBg: "#064e3b",
+    badgeText: "#6EE7B7",
+    badgeBorder: "rgba(16, 185, 129, 0.3)",
   },
 }
 
@@ -286,42 +286,29 @@ export default function RolePathwaysView({
   return (
     <div className="space-y-6">
       {/* ================= 1. PRIMARY ROLE TABS (PLAYBOOK STYLE) ================= */}
-      <div className="bg-[#0f172a] border-2 border-slate-700/80 rounded-none p-5 shadow-2xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-700">
+      <div className="bg-[#121316] border border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-800/80">
           <div>
             <div className="flex items-center gap-2">
-              <span
-                style={{ backgroundColor: currentTheme.primary, color: "#000000" }}
-                className="text-xs font-black tracking-wider uppercase px-2.5 py-0.5 rounded-none shadow-sm"
-              >
+              <span className="text-[11px] font-semibold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700/60">
                 Chapter 15 · What to Learn
               </span>
-              <span className="text-xs font-semibold text-slate-300">TXL Playbook 2026</span>
+              <span className="text-xs text-zinc-400">TXL Playbook 2026</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white mt-1.5 tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mt-1.5 tracking-tight">
               Select Discipline Learning Track
             </h2>
           </div>
 
-          <div
-            style={{
-              backgroundColor: currentTheme.badgeBg,
-              borderColor: currentTheme.badgeBorder,
-              color: currentTheme.badgeText,
-            }}
-            className="flex items-center gap-2 text-xs border font-bold px-3 py-1.5 rounded-none self-start sm:self-auto"
-          >
-            <span>Active Filter:</span>
-            <span
-              style={{ color: currentTheme.primary }}
-              className="bg-black/50 px-2 py-0.5 rounded-none font-black"
-            >
+          <div className="flex items-center gap-2 text-xs border border-zinc-800 bg-zinc-900/60 text-zinc-300 px-3 py-1.5 rounded-lg self-start sm:self-auto font-medium">
+            <span className="text-zinc-400">Active Filter:</span>
+            <span className="font-semibold text-white">
               {activeRole.label}
             </span>
           </div>
         </div>
 
-        {/* The 5 Role Tab Buttons with Respective Colors */}
+        {/* The 5 Role Tab Buttons */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 pt-4">
           {ROLE_TRACKS.map((track) => {
             const isSelected = currentRoleKey === track.key
@@ -334,50 +321,31 @@ export default function RolePathwaysView({
                 key={track.key}
                 type="button"
                 onClick={() => handleRoleSelect(track.key)}
-                style={
+                className={`flex flex-col p-3.5 rounded-xl transition-all duration-200 text-left border ${
                   isSelected
-                    ? {
-                        backgroundColor: trackTheme.primary,
-                        borderColor: trackTheme.primary,
-                        color: "#000000",
-                        boxShadow: `0 10px 25px -5px ${trackTheme.primary}40`,
-                      }
-                    : {
-                        borderColor: "#334155",
-                      }
-                }
-                className={`flex flex-col p-3 rounded-none transition-all duration-200 text-left border-2 ${
-                  isSelected
-                    ? "scale-[1.02] font-black"
-                    : "bg-slate-900/90 text-slate-100 hover:bg-slate-800"
+                    ? "bg-[#181a20] border-zinc-500 shadow-sm ring-1 ring-white/10"
+                    : "bg-[#0d0e11] border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-[#15161a]"
                 }`}
               >
-                <div className="flex items-center justify-between w-full mb-1.5">
+                <div className="flex items-center justify-between w-full mb-2">
                   <Icon
-                    style={{ color: isSelected ? "#000000" : trackTheme.primary }}
+                    style={{ color: isSelected ? trackTheme.primary : "#9ca3af" }}
                     className="w-4 h-4 transition-colors"
                   />
                   <span
-                    style={
+                    className={`text-xs px-2 py-0.5 rounded-md font-semibold ${
                       isSelected
-                        ? { backgroundColor: "#000000", color: trackTheme.primary }
-                        : { color: trackTheme.primary, borderColor: "#334155" }
-                    }
-                    className={`text-xs px-2 py-0.5 rounded-none font-black ${
-                      isSelected ? "" : "bg-slate-800 border"
+                        ? "bg-zinc-800 text-white border border-zinc-700"
+                        : "bg-zinc-900/80 text-zinc-400 border border-zinc-800"
                     }`}
                   >
                     {count}
                   </span>
                 </div>
-                <span className="font-extrabold text-xs sm:text-sm leading-snug">
+                <span className={`font-semibold text-xs sm:text-sm leading-snug ${isSelected ? "text-white" : "text-zinc-200"}`}>
                   {track.label}
                 </span>
-                <span
-                  className={`text-[10px] mt-0.5 font-medium ${
-                    isSelected ? "text-black/80 font-bold" : "text-slate-400"
-                  }`}
-                >
+                <span className="text-[11px] mt-0.5 text-zinc-400 font-normal">
                   {track.key === "ALL" ? "All Domains" : track.badge}
                 </span>
               </button>
@@ -386,124 +354,82 @@ export default function RolePathwaysView({
         </div>
       </div>
 
-      {/* ================= 2. ACTIVE TAB CONTENTS IN A SINGLE MASTER DIV WITH DYNAMIC THEME COLOR ================= */}
-      <div
-        style={{
-          borderColor: currentTheme.primary,
-          boxShadow: `0 20px 50px -12px ${currentTheme.primary}25`,
-        }}
-        className="border-2 bg-[#090d16] p-5 sm:p-7 rounded-none space-y-6 shadow-2xl transition-all duration-300"
-      >
+      {/* ================= 2. ACTIVE TAB CONTENTS IN A CLEAN CONTAINER ================= */}
+      <div className="border border-zinc-800/80 bg-[#121316] p-5 sm:p-7 rounded-2xl space-y-6 shadow-sm transition-all duration-300">
         {/* A. Role Hero Header & Track Readiness Box */}
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 pb-2">
           <div className="space-y-3 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span
-                style={{
-                  backgroundColor: currentTheme.badgeBg,
-                  borderColor: currentTheme.badgeBorder,
-                  color: currentTheme.primary,
-                }}
-                className="px-2.5 py-1 rounded-none text-xs font-black border tracking-wider uppercase flex items-center gap-1.5"
-              >
-                <RoleIcon className="w-3.5 h-3.5" />
+              <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-zinc-800/80 text-zinc-200 border border-zinc-700/60 flex items-center gap-1.5">
+                <RoleIcon className="w-3.5 h-3.5 text-blue-400" />
                 {activeRole.badge}
               </span>
-              <span
-                style={{
-                  borderColor: `${currentTheme.primary}60`,
-                  color: currentTheme.primary,
-                }}
-                className="text-xs font-bold bg-black/40 px-2.5 py-0.5 rounded-none border"
-              >
+              <span className="text-xs font-medium text-zinc-400 bg-zinc-900/60 px-2.5 py-0.5 rounded-md border border-zinc-800">
                 {activeRole.subtitle}
               </span>
             </div>
 
-            <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               {activeRole.title}
             </h3>
 
-            <p className="text-sm text-slate-300 leading-relaxed font-normal">
+            <p className="text-sm text-zinc-400 leading-relaxed font-normal">
               {activeRole.description}
             </p>
 
-            <div className="pt-1 flex flex-wrap items-center gap-2.5 text-xs">
-              <span className="flex items-center gap-1.5 bg-black/50 text-white font-semibold px-3 py-1.5 rounded-none border border-slate-700">
-                <BookOpen style={{ color: currentTheme.primary }} className="w-3.5 h-3.5" />
+            <div className="pt-1 flex flex-wrap items-center gap-2 text-xs">
+              <span className="flex items-center gap-1.5 bg-zinc-900/60 text-zinc-300 font-medium px-3 py-1.5 rounded-lg border border-zinc-800">
+                <BookOpen className="w-3.5 h-3.5 text-blue-400" />
                 {baselineCount} Universal Baseline Topics (Everyone)
               </span>
               {currentRoleKey !== "ALL" && (
-                <span
-                  style={{
-                    backgroundColor: currentTheme.badgeBg,
-                    borderColor: currentTheme.badgeBorder,
-                    color: currentTheme.primary,
-                  }}
-                  className="flex items-center gap-1.5 font-bold px-3 py-1.5 rounded-none border"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
+                <span className="flex items-center gap-1.5 bg-zinc-900/60 text-zinc-300 font-medium px-3 py-1.5 rounded-lg border border-zinc-800">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
                   {specialistCount} Specialist Competencies
                 </span>
               )}
             </div>
           </div>
 
-          {/* Role Readiness Box with Dynamic Border & Colors */}
-          <div
-            style={{ borderColor: `${currentTheme.primary}90` }}
-            className="bg-[#0f172a] p-5 rounded-none border-2 min-w-[290px] shadow-2xl space-y-3.5 self-start w-full lg:w-auto"
-          >
+          {/* Role Readiness Box */}
+          <div className="bg-[#16171b] p-5 rounded-xl border border-zinc-800/80 min-w-[290px] shadow-sm space-y-3.5 self-start w-full lg:w-auto">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1">
-                <TrendingUp style={{ color: currentTheme.primary }} className="w-3.5 h-3.5" />
+              <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
                 Track Readiness
               </span>
-              <span
-                style={{ backgroundColor: currentTheme.primary, color: "#000000" }}
-                className="text-xs font-extrabold px-2.5 py-0.5 rounded-none"
-              >
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-200 border border-zinc-700/60">
                 {completedInRole} / {totalInRole} Done
               </span>
             </div>
 
             <div>
-              <div className="flex items-baseline justify-between mb-1.5">
-                <span
-                  style={{ color: currentTheme.primary }}
-                  className="text-3xl font-black tracking-tight"
-                >
+              <div className="flex items-baseline justify-between mb-2">
+                <span className="text-3xl font-extrabold text-white tracking-tight">
                   {readinessPercentage}%
                 </span>
-                <span className="text-xs font-semibold text-slate-300">
+                <span className="text-xs font-normal text-zinc-400">
                   {totalInRole - completedInRole} topics to go
                 </span>
               </div>
 
-              {/* High Contrast Progress Bar */}
-              <div className="w-full bg-slate-900 rounded-none h-3 overflow-hidden border border-slate-700">
+              {/* Progress Bar */}
+              <div className="w-full bg-zinc-800/80 rounded-full h-2 overflow-hidden">
                 <div
-                  style={{
-                    width: `${readinessPercentage}%`,
-                    backgroundColor: currentTheme.primary,
-                    boxShadow: `0 0 12px ${currentTheme.primary}80`,
-                  }}
-                  className="h-full rounded-none transition-all duration-500"
+                  style={{ width: `${readinessPercentage}%` }}
+                  className="h-full rounded-full bg-blue-500 transition-all duration-500"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800 text-center text-xs">
-              <div className="bg-slate-900 p-2 rounded-none border border-slate-700">
-                <span className="block text-slate-300 text-[10px] font-semibold">In Progress</span>
-                <span className="font-black text-amber-300 text-sm">{inProgressInRole}</span>
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-800/80 text-center text-xs">
+              <div className="bg-zinc-900/80 p-2.5 rounded-lg border border-zinc-800">
+                <span className="block text-zinc-400 text-[11px] font-medium">In Progress</span>
+                <span className="font-bold text-amber-400 text-sm mt-0.5 block">{inProgressInRole}</span>
               </div>
-              <div className="bg-slate-900 p-2 rounded-none border border-slate-700">
-                <span className="block text-slate-300 text-[10px] font-semibold">Status</span>
-                <span
-                  style={{ color: currentTheme.primary }}
-                  className="font-black text-sm"
-                >
+              <div className="bg-zinc-900/80 p-2.5 rounded-lg border border-zinc-800">
+                <span className="block text-zinc-400 text-[11px] font-medium">Status</span>
+                <span className="font-bold text-zinc-200 text-sm mt-0.5 block">
                   {readinessPercentage >= 70 ? "Pod Ready" : "In Training"}
                 </span>
               </div>
@@ -512,21 +438,21 @@ export default function RolePathwaysView({
         </div>
 
         {/* B. Filter & Search Toolbar */}
-        <div className="bg-[#0f172a] p-3.5 rounded-none border-2 border-slate-700 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="bg-[#16171b] p-3 rounded-xl border border-zinc-800/80 flex flex-col md:flex-row items-center justify-between gap-3">
           {/* Search */}
           <div className="relative flex-1 w-full">
-            <Search style={{ color: currentTheme.primary }} className="w-4 h-4 absolute left-3.5 top-3" />
+            <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-2.5" />
             <input
               type="text"
               placeholder={`Search ${activeRole.label} topics (e.g. Next.js, RAG, Unit economics, JTBD)...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#090d16] border-2 border-slate-700 focus:border-white text-white placeholder-slate-400 rounded-none pl-10 pr-9 py-2 text-xs font-medium focus:outline-none transition"
+              className="w-full bg-[#0a0a0c] border border-zinc-800 focus:border-zinc-600 text-zinc-100 placeholder-zinc-500 rounded-lg pl-10 pr-9 py-2 text-xs font-normal focus:outline-none transition"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-2.5 text-slate-400 hover:text-white"
+                className="absolute right-3 top-2.5 text-zinc-400 hover:text-white"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -535,91 +461,46 @@ export default function RolePathwaysView({
 
           {/* Status Filter Buttons */}
           <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto scrollbar-none pb-1 md:pb-0 text-xs">
-            <span className="text-slate-300 font-bold text-xs mr-1 hidden sm:inline">Status:</span>
-            <button
-              onClick={() => setStatusFilter("ALL")}
-              style={
-                statusFilter === "ALL"
-                  ? { backgroundColor: currentTheme.primary, color: "#000000", borderColor: currentTheme.primary }
-                  : {}
-              }
-              className={`px-3 py-1.5 rounded-none font-bold transition border ${
-                statusFilter === "ALL"
-                  ? ""
-                  : "bg-slate-900 text-slate-200 border-slate-700 hover:border-slate-500"
-              }`}
-            >
-              All ({totalInRole})
-            </button>
-            <button
-              onClick={() => setStatusFilter("IN_PROGRESS")}
-              style={
-                statusFilter === "IN_PROGRESS"
-                  ? { backgroundColor: currentTheme.primary, color: "#000000", borderColor: currentTheme.primary }
-                  : {}
-              }
-              className={`px-3 py-1.5 rounded-none font-bold transition border ${
-                statusFilter === "IN_PROGRESS"
-                  ? ""
-                  : "bg-slate-900 text-slate-200 border-slate-700 hover:border-slate-500"
-              }`}
-            >
-              In Progress ({inProgressInRole})
-            </button>
-            <button
-              onClick={() => setStatusFilter("COMPLETED")}
-              style={
-                statusFilter === "COMPLETED"
-                  ? { backgroundColor: currentTheme.primary, color: "#000000", borderColor: currentTheme.primary }
-                  : {}
-              }
-              className={`px-3 py-1.5 rounded-none font-bold transition border ${
-                statusFilter === "COMPLETED"
-                  ? ""
-                  : "bg-slate-900 text-slate-200 border-slate-700 hover:border-slate-500"
-              }`}
-            >
-              Completed ({completedInRole})
-            </button>
-            <button
-              onClick={() => setStatusFilter("NOT_STARTED")}
-              style={
-                statusFilter === "NOT_STARTED"
-                  ? { backgroundColor: currentTheme.primary, color: "#000000", borderColor: currentTheme.primary }
-                  : {}
-              }
-              className={`px-3 py-1.5 rounded-none font-bold transition border ${
-                statusFilter === "NOT_STARTED"
-                  ? ""
-                  : "bg-slate-900 text-slate-200 border-slate-700 hover:border-slate-500"
-              }`}
-            >
-              To Learn ({notStartedInRole})
-            </button>
+            <span className="text-zinc-400 font-medium text-xs mr-1 hidden sm:inline">Status:</span>
+            {[
+              { id: "ALL", label: `All (${totalInRole})` },
+              { id: "IN_PROGRESS", label: `In Progress (${inProgressInRole})` },
+              { id: "COMPLETED", label: `Completed (${completedInRole})` },
+              { id: "NOT_STARTED", label: `To Learn (${notStartedInRole})` },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setStatusFilter(tab.id as any)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                  statusFilter === tab.id
+                    ? "bg-zinc-800 text-white border border-zinc-700 shadow-sm"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 border border-transparent"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* C. Active topics counter banner */}
-        <div className="flex items-center justify-between px-1 text-xs text-slate-200">
+        <div className="flex items-center justify-between px-1 text-xs text-zinc-400">
           <div>
             Showing{" "}
-            <span style={{ color: currentTheme.primary }} className="font-extrabold">
+            <span className="font-bold text-white">
               {allRoleTopics.length}
             </span>{" "}
             topics for{" "}
-            <span
-              style={{ textDecorationColor: currentTheme.primary }}
-              className="font-extrabold text-white underline"
-            >
+            <span className="font-bold text-white">
               {activeRole.label}
             </span>
             {currentRoleKey !== "ALL" && (
-              <span className="text-slate-300"> ({baselineCount} universal baseline + {specialistCount} specialist)</span>
+              <span className="text-zinc-500"> ({baselineCount} universal baseline + {specialistCount} specialist)</span>
             )}
           </div>
           {searchQuery && (
-            <span className="text-amber-300 font-semibold">
-              Filtered by query: "{searchQuery}"
+            <span className="text-amber-400/90 font-medium">
+              Filtered by: "{searchQuery}"
             </span>
           )}
         </div>
@@ -627,10 +508,10 @@ export default function RolePathwaysView({
         {/* D. Curriculum Topics Grouped by Domain */}
         <div className="space-y-3">
           {filteredRoleDomains.length === 0 ? (
-            <div className="p-12 text-center border-2 border-dashed border-slate-700 rounded-none bg-slate-900/50">
-              <Search className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-              <h4 className="text-base font-extrabold text-white">No matching topics found</h4>
-              <p className="text-xs text-slate-300 mt-1 max-w-md mx-auto">
+            <div className="p-12 text-center border border-dashed border-zinc-800 rounded-xl bg-zinc-900/30">
+              <Search className="w-8 h-8 text-zinc-500 mx-auto mb-3" />
+              <h4 className="text-sm font-semibold text-white">No matching topics found</h4>
+              <p className="text-xs text-zinc-400 mt-1 max-w-md mx-auto">
                 No competencies matched your filter for {activeRole.label}. Try adjusting your search query or status filter.
               </p>
               <button
@@ -638,8 +519,7 @@ export default function RolePathwaysView({
                   setSearchQuery("")
                   setStatusFilter("ALL")
                 }}
-                style={{ backgroundColor: currentTheme.primary, color: "#000000" }}
-                className="mt-4 px-4 py-2 rounded-none text-xs font-black hover:opacity-90 transition"
+                className="mt-4 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-white transition border border-zinc-700"
               >
                 Reset Filters
               </button>
@@ -654,62 +534,45 @@ export default function RolePathwaysView({
               return (
                 <div
                   key={domain.id}
-                  className="border-2 border-slate-700/80 rounded-none bg-[#0f172a] overflow-hidden shadow-lg transition-colors hover:border-slate-600"
+                  className="border border-zinc-800/80 rounded-xl bg-[#141519] overflow-hidden shadow-sm transition-all hover:border-zinc-700/80"
                 >
                   {/* Domain Header */}
                   <div
                     onClick={() => toggleDomainCollapse(domain.id)}
-                    className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-slate-800/60 transition select-none"
+                    className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-zinc-800/30 transition select-none"
                   >
                     <div className="flex items-center space-x-3.5">
-                      <div
-                        style={{
-                          borderColor: currentTheme.badgeBorder,
-                          color: currentTheme.primary,
-                          backgroundColor: currentTheme.badgeBg,
-                        }}
-                        className="w-9 h-9 rounded-none border flex items-center justify-center font-black text-sm"
-                      >
+                      <div className="w-8 h-8 rounded-lg border border-zinc-700/60 bg-zinc-800/80 flex items-center justify-center font-bold text-xs text-zinc-200">
                         {domain.code}
                       </div>
                       <div>
-                        <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                        <h3 className="text-base font-bold text-white flex items-center gap-2">
                           {domain.name}
-                          <span
-                            style={{ color: currentTheme.primary }}
-                            className="text-xs font-bold bg-black/40 px-2 py-0.5 rounded-none border border-slate-700"
-                          >
+                          <span className="text-xs font-medium text-zinc-400 bg-zinc-800/60 px-2 py-0.5 rounded-md border border-zinc-700/50">
                             {domain.completedInDomain}/{domain.totalRoleTopics} done
                           </span>
                         </h3>
-                        <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">{domain.focus}</p>
+                        <p className="text-xs text-zinc-400 mt-0.5 line-clamp-1">{domain.focus}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center space-x-4">
                       <div className="hidden sm:flex items-center space-x-2.5">
-                        <div className="w-24 sm:w-32 bg-slate-900 rounded-none h-2.5 overflow-hidden border border-slate-700">
+                        <div className="w-24 sm:w-32 bg-zinc-800/80 rounded-full h-1.5 overflow-hidden">
                           <div
-                            style={{
-                              width: `${domainPct}%`,
-                              backgroundColor: currentTheme.primary,
-                              boxShadow: `0 0 8px ${currentTheme.primary}70`,
-                            }}
-                            className="h-full rounded-none transition-all duration-300"
+                            style={{ width: `${domainPct}%` }}
+                            className="h-full rounded-full bg-blue-500 transition-all duration-300"
                           />
                         </div>
-                        <span
-                          style={{ color: currentTheme.primary }}
-                          className="text-xs font-black w-10 text-right"
-                        >
+                        <span className="text-xs font-medium text-zinc-400 w-10 text-right">
                           {domainPct}%
                         </span>
                       </div>
-                      <div className="w-7 h-7 rounded-none bg-slate-800 flex items-center justify-center text-slate-300 border border-slate-700">
+                      <div className="w-7 h-7 rounded-lg bg-zinc-800/60 flex items-center justify-center text-zinc-400 border border-zinc-700/50">
                         {isCollapsed ? (
-                          <ChevronRight className="w-4 h-4 text-slate-300" />
+                          <ChevronRight className="w-3.5 h-3.5" />
                         ) : (
-                          <ChevronDown style={{ color: currentTheme.primary }} className="w-4 h-4" />
+                          <ChevronDown className="w-3.5 h-3.5 text-zinc-200" />
                         )}
                       </div>
                     </div>
@@ -717,8 +580,8 @@ export default function RolePathwaysView({
 
                   {/* Topics Grid (Open on toggle) */}
                   {!isCollapsed && (
-                    <div className="p-4 sm:p-5 bg-[#090d16]/95 border-t border-slate-800">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 sm:p-5 bg-[#0d0e11]/90 border-t border-zinc-800/80">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                         {domain.topics.map((topic) => {
                           const status = progressState[topic.id]
                           const isCompleted = status === "COMPLETED"
@@ -729,20 +592,12 @@ export default function RolePathwaysView({
                           return (
                             <div
                               key={topic.id}
-                              style={
+                              className={`p-4 sm:p-5 rounded-xl border transition-all flex flex-col justify-between ${
                                 isCompleted
-                                  ? {
-                                      borderColor: currentTheme.primary,
-                                      boxShadow: `0 0 15px -3px ${currentTheme.primary}25`,
-                                    }
-                                  : {}
-                              }
-                              className={`p-4 sm:p-5 rounded-none border-2 transition-all flex flex-col justify-between ${
-                                isCompleted
-                                  ? "bg-[#0f172a]"
+                                  ? "bg-[#16171b] border-emerald-500/30"
                                   : isInProgress
-                                  ? "bg-[#0f172a] border-amber-400 shadow-lg shadow-amber-500/10"
-                                  : "bg-[#0f172a]/90 border-slate-700/90 hover:border-slate-500"
+                                  ? "bg-[#16171b] border-amber-500/30"
+                                  : "bg-[#141519] border-zinc-800/80 hover:border-zinc-700/80"
                               }`}
                             >
                               <div>
@@ -750,19 +605,12 @@ export default function RolePathwaysView({
                                 <div className="flex items-start justify-between gap-2 mb-2.5">
                                   <div className="flex flex-wrap items-center gap-1.5">
                                     {isBaseline ? (
-                                      <span
-                                        style={{
-                                          backgroundColor: currentTheme.badgeBg,
-                                          borderColor: currentTheme.badgeBorder,
-                                          color: currentTheme.primary,
-                                        }}
-                                        className="text-[11px] px-2.5 py-0.5 rounded-none font-black border shadow-sm"
-                                      >
-                                        Everyone (Baseline)
+                                      <span className="text-[10px] px-2 py-0.5 rounded-md font-medium bg-zinc-800/80 text-zinc-300 border border-zinc-700/50">
+                                        Baseline
                                       </span>
                                     ) : (
-                                      <span className="text-[11px] px-2 py-0.5 rounded-none font-bold bg-slate-800 text-slate-200 border border-slate-600">
-                                        Role Specialist
+                                      <span className="text-[10px] px-2 py-0.5 rounded-md font-medium bg-zinc-800/40 text-zinc-400 border border-zinc-800">
+                                        Specialist
                                       </span>
                                     )}
 
@@ -771,7 +619,7 @@ export default function RolePathwaysView({
                                       .map((r) => (
                                         <span
                                           key={r}
-                                          className="text-[10px] px-2 py-0.5 rounded-none font-bold bg-black/60 text-slate-300 border border-slate-700"
+                                          className="text-[10px] px-2 py-0.5 rounded-md font-medium bg-zinc-900 text-zinc-400 border border-zinc-800"
                                         >
                                           {r}
                                         </span>
@@ -781,45 +629,31 @@ export default function RolePathwaysView({
                                   {/* Status Badge */}
                                   <div>
                                     {isCompleted && (
-                                      <span
-                                        style={{ backgroundColor: currentTheme.primary, color: "#000000" }}
-                                        className="text-xs px-2.5 py-0.5 rounded-none font-black flex items-center gap-1"
-                                      >
-                                        <CheckCircle2 className="w-3.5 h-3.5" /> Done
+                                      <span className="text-[11px] px-2.5 py-0.5 rounded-md font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                                        <CheckCircle2 className="w-3 h-3" /> Done
                                       </span>
                                     )}
                                     {isInProgress && (
-                                      <span className="text-xs px-2.5 py-0.5 rounded-none font-bold bg-amber-400 text-black flex items-center gap-1">
-                                        <Clock className="w-3.5 h-3.5" /> In Progress
-                                      </span>
-                                    )}
-                                    {!status && (
-                                      <span className="text-[10px] px-2 py-0.5 rounded-none font-semibold bg-slate-800 text-slate-400">
-                                        Not Started
+                                      <span className="text-[11px] px-2.5 py-0.5 rounded-md font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                                        <Clock className="w-3 h-3" /> In Progress
                                       </span>
                                     )}
                                   </div>
                                 </div>
 
                                 {/* Title & Description */}
-                                <h4 className="font-extrabold text-base text-white tracking-tight">
+                                <h4 className="font-semibold text-sm text-white tracking-tight">
                                   {topic.title}
                                 </h4>
-                                <p className="text-xs sm:text-sm text-slate-200 mt-1.5 leading-relaxed font-normal">
+                                <p className="text-xs text-zinc-400 mt-1 leading-relaxed font-normal">
                                   {topic.description}
                                 </p>
 
                                 {/* Note snippet preview */}
                                 {hasNote && (
-                                  <div
-                                    style={{ borderColor: `${currentTheme.primary}50` }}
-                                    className="mt-3 p-3 rounded-none bg-[#090d16] border text-xs text-slate-200 font-mono"
-                                  >
-                                    <div
-                                      style={{ color: currentTheme.primary }}
-                                      className="flex items-center gap-1.5 font-bold mb-1 text-[11px]"
-                                    >
-                                      <FileText className="w-3.5 h-3.5" /> Your Note:
+                                  <div className="mt-3 p-3 rounded-lg bg-[#0a0a0c] border border-zinc-800 text-xs text-zinc-300 font-mono">
+                                    <div className="flex items-center gap-1.5 font-semibold text-zinc-400 mb-1 text-[11px]">
+                                      <FileText className="w-3 h-3 text-blue-400" /> Your Note:
                                     </div>
                                     <p className="line-clamp-2">{userNotes[topic.id]}</p>
                                   </div>
@@ -827,26 +661,21 @@ export default function RolePathwaysView({
                               </div>
 
                               {/* Actions Footer */}
-                              <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                              <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between gap-2">
                                 {/* Toggle Status Button */}
                                 <button
                                   onClick={() => onToggleStatus(topic.id)}
-                                  style={
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                                     isCompleted
-                                      ? { backgroundColor: currentTheme.primary, color: "#000000" }
-                                      : {}
-                                  }
-                                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-none text-xs font-bold transition shadow-sm ${
-                                    isCompleted
-                                      ? "hover:opacity-90"
+                                      ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25"
                                       : isInProgress
-                                      ? "bg-amber-400 text-black hover:bg-amber-300"
-                                      : "bg-slate-800 text-white hover:border-slate-400 border border-slate-600"
+                                      ? "bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25"
+                                      : "bg-zinc-800/80 text-zinc-200 hover:bg-zinc-700/80 border border-zinc-700/60"
                                   }`}
                                 >
                                   {isCompleted ? (
                                     <>
-                                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                      <Check className="w-3.5 h-3.5" />
                                       <span>Completed</span>
                                     </>
                                   ) : isInProgress ? (
@@ -866,19 +695,10 @@ export default function RolePathwaysView({
                                 <div className="flex items-center space-x-1.5">
                                   <button
                                     onClick={() => onOpenNotes(topic)}
-                                    style={
+                                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 border ${
                                       hasNote
-                                        ? {
-                                            backgroundColor: currentTheme.badgeBg,
-                                            color: currentTheme.primary,
-                                            borderColor: currentTheme.badgeBorder,
-                                          }
-                                        : {}
-                                    }
-                                    className={`px-3 py-1.5 rounded-none text-xs font-bold transition flex items-center gap-1.5 border ${
-                                      hasNote
-                                        ? ""
-                                        : "bg-slate-800 text-slate-200 border-slate-700 hover:text-white hover:border-slate-500"
+                                        ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                                        : "bg-zinc-800/60 text-zinc-300 border-zinc-700/50 hover:bg-zinc-800 hover:text-white"
                                     }`}
                                     title="Add or edit personal learning notes"
                                   >
@@ -888,11 +708,10 @@ export default function RolePathwaysView({
 
                                   <button
                                     onClick={() => onOpenShare(topic)}
-                                    className="px-3 py-1.5 rounded-none text-xs font-bold bg-slate-800 text-slate-200 border border-slate-700 hover:text-indigo-300 hover:border-indigo-500 transition flex items-center gap-1.5"
+                                    className="p-1.5 rounded-lg text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 transition border border-transparent hover:border-zinc-700"
                                     title="Share a key learning with your pod"
                                   >
                                     <Share2 className="w-3.5 h-3.5" />
-                                    <span className="hidden sm:inline">Share</span>
                                   </button>
                                 </div>
                               </div>

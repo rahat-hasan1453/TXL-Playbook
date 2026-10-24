@@ -173,55 +173,45 @@ export default function TXLLearningPortal() {
   }
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col font-sans selection:bg-[#67E14B] selection:text-black">
+    <div className="min-h-screen bg-[#0a0a0c] text-zinc-100 flex flex-col font-sans selection:bg-zinc-800 selection:text-white">
       {/* Top Navigation Bar */}
-      <header className="border-b-2 border-slate-800 bg-[#0f172a]/95 backdrop-blur sticky top-0 z-40 shadow-xl">
+      <header className="border-b border-zinc-800/80 bg-[#0c0d10]/95 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-none bg-[#142617] border-2 border-[#67E14B] flex items-center justify-center shadow-lg shadow-lime-500/20">
-              <Sparkles className="w-5 h-5 text-[#67E14B]" />
+            <div className="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-blue-400">
+              <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-extrabold text-lg text-white tracking-tight flex items-center gap-2">
-                TXL Playbook{" "}
-                <span className="text-xs px-2 py-0.5 rounded-none bg-[#142617] text-[#7FE866] font-black border border-[#67E14B]/60 uppercase">
+              <span className="font-bold text-base text-white tracking-tight flex items-center gap-2">
+                TXL Playbook
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 font-medium border border-zinc-700/60 uppercase">
                   2026
                 </span>
               </span>
-              <p className="text-xs text-lime-400 font-semibold">Chapter 15 · What to Learn</p>
+              <p className="text-xs text-zinc-400">Chapter 15 · What to Learn</p>
             </div>
           </div>
 
           {/* User Profile & Logout Button */}
-          <div className="flex items-center space-x-3.5">
-            <div className="flex items-center space-x-2.5 bg-[#090d16] border-2 border-slate-700 px-3 py-1.5 rounded-none shadow-sm">
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2.5 bg-zinc-900/60 border border-zinc-800 px-3 py-1.5 rounded-lg shadow-sm">
               <div
-                style={
-                  currentUserRole === "UNIT_HEAD"
-                    ? { borderColor: "#A855F7", color: "#C084FC" }
-                    : { borderColor: "#67E14B", color: "#7FE866" }
-                }
-                className="w-7 h-7 rounded-none bg-slate-900 flex items-center justify-center text-xs font-black border"
+                className="w-7 h-7 rounded-md bg-zinc-800 flex items-center justify-center text-xs font-semibold text-zinc-200 border border-zinc-700/60"
               >
                 {currentUser?.avatar || (currentUserRole === "UNIT_HEAD" ? "UH" : "RC")}
               </div>
               <div className="text-left text-xs">
                 <div className="flex items-center gap-1.5">
-                  <p className="font-bold text-white leading-tight">
-                    {currentUser?.name || (currentUserRole === "UNIT_HEAD" ? "Sarah Jenkins" : "Rahat Chowdhury")}
+                  <p className="font-semibold text-white leading-tight">
+                    {currentUser?.name || (currentUserRole === "UNIT_HEAD" ? "Lead" : "Learner")}
                   </p>
                   <span
-                    style={
-                      currentUserRole === "UNIT_HEAD"
-                        ? { backgroundColor: "#3b0764", borderColor: "#A855F7", color: "#C084FC" }
-                        : { backgroundColor: "#142617", borderColor: "#67E14B80", color: "#7FE866" }
-                    }
-                    className="text-[9px] px-1.5 py-0.2 rounded-none font-black border uppercase"
+                    className="text-[10px] px-1.5 py-0.5 rounded-md font-medium border bg-zinc-800 text-zinc-300 border-zinc-700/60"
                   >
                     {currentUserRole === "UNIT_HEAD" ? "Unit Head" : "Learner"}
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-400 font-medium">
+                <p className="text-[11px] text-zinc-400">
                   {currentUser?.discipline || (currentUserRole === "UNIT_HEAD" ? "Unit Head / Lead" : "AI Product Manager")}
                 </p>
               </div>
@@ -229,7 +219,7 @@ export default function TXLLearningPortal() {
 
             <button
               onClick={handleLogout}
-              className="px-2.5 py-1.5 rounded-none border border-slate-700 bg-slate-900 hover:bg-red-950/70 hover:border-red-500/80 hover:text-red-300 text-slate-400 text-xs font-bold transition flex items-center gap-1.5"
+              className="px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-medium transition flex items-center gap-1.5"
               title="Logout from portal"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -242,45 +232,45 @@ export default function TXLLearningPortal() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-6 text-sm overflow-x-auto scrollbar-none">
           <button
             onClick={() => setActiveTab("what-to-learn")}
-            className={`py-3.5 font-black border-b-2 transition flex items-center gap-2 whitespace-nowrap text-sm ${
+            className={`py-3.5 font-medium border-b-2 transition flex items-center gap-2 whitespace-nowrap text-sm ${
               activeTab === "what-to-learn"
-                ? "border-[#67E14B] text-[#7FE866]"
-                : "border-transparent text-slate-300 hover:text-white"
+                ? "border-blue-500 text-white"
+                : "border-transparent text-zinc-400 hover:text-zinc-200"
             }`}
           >
             <BookOpen className="w-4 h-4" />
             <span>What to Learn</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-none bg-[#142617] text-[#7FE866] border border-[#67E14B]/60 font-black">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700/60 font-medium">
               Role Tracks
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab("my-notes")}
-            className={`py-3.5 font-black border-b-2 transition flex items-center gap-2 whitespace-nowrap text-sm ${
+            className={`py-3.5 font-medium border-b-2 transition flex items-center gap-2 whitespace-nowrap text-sm ${
               activeTab === "my-notes"
-                ? "border-[#67E14B] text-[#7FE866]"
-                : "border-transparent text-slate-300 hover:text-white"
+                ? "border-blue-500 text-white"
+                : "border-transparent text-zinc-400 hover:text-zinc-200"
             }`}
           >
             <FileText className="w-4 h-4" />
             <span>My Notes</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-none bg-slate-800 text-slate-300 border border-slate-700">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700/60">
               {Object.keys(userNotes).length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab("shared-feed")}
-            className={`py-3.5 font-black border-b-2 transition flex items-center gap-2 whitespace-nowrap text-sm ${
+            className={`py-3.5 font-medium border-b-2 transition flex items-center gap-2 whitespace-nowrap text-sm ${
               activeTab === "shared-feed"
-                ? "border-[#67E14B] text-[#7FE866]"
-                : "border-transparent text-slate-300 hover:text-white"
+                ? "border-blue-500 text-white"
+                : "border-transparent text-zinc-400 hover:text-zinc-200"
             }`}
           >
             <MessageSquare className="w-4 h-4" />
             <span>Shared Learnings</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-none bg-slate-800 text-slate-300 border border-slate-700">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700/60">
               {sharedLearnings.length}
             </span>
           </button>
@@ -288,15 +278,15 @@ export default function TXLLearningPortal() {
           {currentUserRole === "UNIT_HEAD" && (
             <button
               onClick={() => setActiveTab("unit-head")}
-              className={`py-3.5 font-black border-b-2 transition flex items-center gap-2 whitespace-nowrap text-sm ${
+              className={`py-3.5 font-medium border-b-2 transition flex items-center gap-2 whitespace-nowrap text-sm ${
                 activeTab === "unit-head"
-                  ? "border-purple-400 text-purple-300"
-                  : "border-transparent text-slate-300 hover:text-white"
+                  ? "border-purple-500 text-white"
+                  : "border-transparent text-zinc-400 hover:text-zinc-200"
               }`}
             >
               <BarChart3 className="w-4 h-4" />
               <span>Unit Head Overview</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-none bg-purple-950 text-purple-300 border border-purple-500/60 font-black">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-950/60 text-purple-300 border border-purple-800/60 font-medium">
                 Executive
               </span>
             </button>
@@ -322,28 +312,28 @@ export default function TXLLearningPortal() {
         {/* ================= VIEW 2: MY NOTES ================= */}
         {activeTab === "my-notes" && (
           <div className="space-y-6">
-            <div className="bg-[#0f172a] p-6 rounded-none border-2 border-slate-700 shadow-xl">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[11px] font-black uppercase tracking-wider text-black bg-[#67E14B] px-2.5 py-0.5 rounded-none">
+            <div className="bg-[#121316] p-6 rounded-2xl border border-zinc-800/80 shadow-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[11px] font-medium tracking-wide text-zinc-400 bg-zinc-800/80 px-2.5 py-0.5 rounded-full border border-zinc-700/50">
                   Personal Archive
                 </span>
               </div>
-              <h1 className="text-2xl font-black text-white">My Learning Notes</h1>
-              <p className="text-sm text-slate-200 mt-1 font-medium">
+              <h1 className="text-2xl font-bold text-white tracking-tight">My Learning Notes</h1>
+              <p className="text-sm text-zinc-400 mt-1">
                 Your private implementation notes, observations, and key takeaways across the 82 competencies.
               </p>
             </div>
 
             {Object.keys(userNotes).length === 0 ? (
-              <div className="p-16 text-center border-2 border-dashed border-slate-700 rounded-none bg-[#0f172a]/60">
-                <FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-                <h3 className="text-base font-bold text-white">No notes logged yet</h3>
-                <p className="text-xs text-slate-300 mt-1">
+              <div className="p-16 text-center border border-dashed border-zinc-800 rounded-2xl bg-[#121316]/50">
+                <FileText className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
+                <h3 className="text-base font-semibold text-zinc-200">No notes logged yet</h3>
+                <p className="text-xs text-zinc-400 mt-1">
                   Click "Note" on any topic in the curriculum to record your personal learnings.
                 </p>
                 <button
                   onClick={() => setActiveTab("what-to-learn")}
-                  className="mt-4 px-4 py-2 rounded-none bg-[#67E14B] text-black text-xs font-black hover:bg-lime-300 transition"
+                  className="mt-4 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700/60 transition"
                 >
                   Browse Topics
                 </button>
@@ -365,33 +355,33 @@ export default function TXLLearningPortal() {
                   return (
                     <div
                       key={topicId}
-                      className="p-5 rounded-none border-2 border-slate-700 bg-[#0f172a] shadow-xl flex flex-col justify-between"
+                      className="p-5 rounded-xl border border-zinc-800/80 bg-[#121316] shadow-sm flex flex-col justify-between"
                     >
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[11px] font-black text-[#7FE866] bg-[#142617] border border-[#67E14B]/60 px-2 py-0.5 rounded-none uppercase tracking-wider">
+                          <span className="text-[11px] font-medium text-zinc-300 bg-zinc-800/80 border border-zinc-700/60 px-2.5 py-0.5 rounded-full">
                             {foundDomain?.name}
                           </span>
-                          <span className="text-xs font-semibold text-slate-400">Personal Note</span>
+                          <span className="text-xs text-zinc-500">Personal Note</span>
                         </div>
-                        <h3 className="font-extrabold text-base text-white mt-1">
+                        <h3 className="font-semibold text-base text-zinc-100 mt-1">
                           {foundTopic?.title || topicId}
                         </h3>
-                        <p className="text-xs text-slate-100 mt-3 whitespace-pre-wrap bg-[#090d16] p-3.5 rounded-none border border-slate-800 leading-relaxed font-mono">
+                        <p className="text-xs text-zinc-300 mt-3 whitespace-pre-wrap bg-[#0a0a0c] p-3.5 rounded-lg border border-zinc-800/80 leading-relaxed font-mono">
                           {noteContent}
                         </p>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+                      <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-xs">
                         <button
                           onClick={() => foundTopic && handleOpenNotes(foundTopic)}
-                          className="px-3 py-1.5 rounded-none bg-[#142617] text-[#7FE866] border border-[#67E14B]/60 font-bold hover:bg-[#67E14B] hover:text-black transition"
+                          className="px-3 py-1.5 rounded-lg bg-zinc-800/80 text-zinc-300 border border-zinc-700/60 font-medium hover:bg-zinc-700 hover:text-white transition"
                         >
                           Edit Note
                         </button>
                         <button
                           onClick={() => foundTopic && handleOpenShare(foundTopic)}
-                          className="px-3 py-1.5 rounded-none bg-slate-800 text-white hover:text-indigo-300 border border-slate-700 transition flex items-center gap-1.5 font-semibold"
+                          className="px-3 py-1.5 rounded-lg bg-zinc-900 text-zinc-400 hover:text-zinc-200 border border-zinc-800 transition flex items-center gap-1.5 font-medium"
                         >
                           <Share2 className="w-3.5 h-3.5" /> Share with Pod
                         </button>
@@ -407,27 +397,27 @@ export default function TXLLearningPortal() {
         {/* ================= VIEW 3: SHARED FEED ================= */}
         {activeTab === "shared-feed" && (
           <div className="max-w-3xl mx-auto space-y-6">
-            <div className="bg-[#0f172a] p-6 rounded-none border-2 border-slate-700 shadow-xl">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[11px] font-black uppercase tracking-wider text-black bg-[#67E14B] px-2.5 py-0.5 rounded-none">
+            <div className="bg-[#121316] p-6 rounded-2xl border border-zinc-800/80 shadow-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[11px] font-medium tracking-wide text-zinc-400 bg-zinc-800/80 px-2.5 py-0.5 rounded-full border border-zinc-700/50">
                   Community Feed
                 </span>
               </div>
-              <h1 className="text-2xl font-black text-white flex items-center gap-2">
-                <MessageSquare className="w-6 h-6 text-lime-400" />
+              <h1 className="text-2xl font-bold text-white flex items-center gap-2 tracking-tight">
+                <MessageSquare className="w-6 h-6 text-blue-400" />
                 Team Learning Feed
               </h1>
-              <p className="text-sm text-slate-200 mt-1 font-medium">
+              <p className="text-sm text-zinc-400 mt-1">
                 High-signal takeaways, agent workflows, and architectural tips shared across TXL pods.
               </p>
             </div>
 
             <div className="space-y-4">
               {sharedLearnings.length === 0 ? (
-                <div className="bg-[#0f172a] p-12 text-center rounded-none border-2 border-dashed border-slate-700">
-                  <MessageSquare className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-                  <h3 className="text-base font-extrabold text-white">No Shared Notes Yet</h3>
-                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                <div className="bg-[#121316]/50 p-12 text-center rounded-2xl border border-dashed border-zinc-800">
+                  <MessageSquare className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
+                  <h3 className="text-base font-semibold text-zinc-200">No Shared Notes Yet</h3>
+                  <p className="text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
                     When you or team members share notes from your curriculum topics, they will appear here in the team feed.
                   </p>
                 </div>
@@ -435,49 +425,49 @@ export default function TXLLearningPortal() {
                 sharedLearnings.map((item) => (
                   <div
                     key={item.id}
-                    className="p-5 rounded-none border-2 border-slate-700 bg-[#0f172a] shadow-xl space-y-3"
+                    className="p-5 rounded-xl border border-zinc-800/80 bg-[#121316] shadow-sm space-y-3"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className="w-9 h-9 rounded-none bg-[#142617] border border-[#67E14B]/70 flex items-center justify-center text-xs font-black text-[#7FE866]">
+                        <div className="w-9 h-9 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs font-semibold text-zinc-200">
                           {item.userName.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-xs font-extrabold text-white leading-tight">
+                          <p className="text-xs font-semibold text-zinc-100 leading-tight">
                             {item.userName}
-                            <span className="ml-2 text-[10px] font-semibold text-lime-400">
+                            <span className="ml-2 text-[10px] font-normal text-zinc-400">
                               ({item.userRole})
                             </span>
                           </p>
-                          <p className="text-[10px] text-slate-400 font-medium">{item.timestamp}</p>
+                          <p className="text-[10px] text-zinc-500 font-medium">{item.timestamp}</p>
                         </div>
                       </div>
 
-                      <span className="text-[11px] px-2.5 py-0.5 rounded-none bg-[#142617] text-[#7FE866] border border-[#67E14B]/60 font-bold">
+                      <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-zinc-800/80 text-zinc-300 border border-zinc-700/60 font-medium">
                         {item.domainName}
                       </span>
                     </div>
 
-                    <div className="bg-[#090d16] p-4 rounded-none border border-slate-800">
-                      <p className="text-xs font-bold text-lime-400 mb-1">
-                        Learned: <span className="text-white">{item.topicTitle}</span>
+                    <div className="bg-[#0a0a0c] p-4 rounded-lg border border-zinc-800/80">
+                      <p className="text-xs font-medium text-blue-400 mb-1">
+                        Learned: <span className="text-zinc-200">{item.topicTitle}</span>
                       </p>
-                      <p className="text-xs text-slate-100 leading-relaxed font-normal">{item.note}</p>
+                      <p className="text-xs text-zinc-300 leading-relaxed font-normal">{item.note}</p>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-slate-300 pt-1">
+                    <div className="flex items-center justify-between text-xs text-zinc-400 pt-1">
                       <button
                         onClick={() => {
                           setSharedLearnings((prev) =>
                             prev.map((l) => (l.id === item.id ? { ...l, likes: l.likes + 1 } : l))
                           )
                         }}
-                        className="hover:text-pink-400 transition flex items-center gap-1.5 font-bold bg-slate-900 px-3 py-1.5 rounded-none border border-slate-700"
+                        className="hover:text-red-400 transition flex items-center gap-1.5 font-medium bg-zinc-800/60 px-3 py-1.5 rounded-lg border border-zinc-700/50"
                       >
-                        <Heart className="w-3.5 h-3.5 text-pink-400 fill-pink-400/30" />
+                        <Heart className="w-3.5 h-3.5 text-zinc-400 hover:text-red-400" />
                         <span>{item.likes} Likes</span>
                       </button>
-                      <span className="text-[11px] text-slate-400 font-semibold">TXL Playbook Knowledge Base</span>
+                      <span className="text-[11px] text-zinc-500 font-normal">TXL Playbook Knowledge Base</span>
                     </div>
                   </div>
                 ))
@@ -490,77 +480,77 @@ export default function TXLLearningPortal() {
         {activeTab === "unit-head" && currentUserRole === "UNIT_HEAD" && (
           <div className="space-y-6">
             {/* Header banner */}
-            <div className="bg-gradient-to-r from-purple-950/60 via-[#0f172a] to-[#0f172a] p-6 sm:p-7 rounded-none border-2 border-purple-500/60 shadow-2xl">
+            <div className="bg-[#121316] p-6 sm:p-7 rounded-2xl border border-zinc-800/80 shadow-xl">
               <div className="flex items-center gap-2 mb-2">
-                <span className="px-2.5 py-0.5 rounded-none bg-purple-500/20 text-purple-300 text-xs font-black border border-purple-500/40 flex items-center gap-1">
+                <span className="px-2.5 py-0.5 rounded-full bg-purple-950/60 text-purple-300 text-xs font-medium border border-purple-800/50 flex items-center gap-1">
                   <ShieldAlert className="w-3.5 h-3.5" /> Executive Command Center
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white">TXL Organizational Capability Matrix</h1>
-              <p className="text-sm text-slate-200 mt-1 max-w-2xl font-medium">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">TXL Organizational Capability Matrix</h1>
+              <p className="text-sm text-zinc-400 mt-1 max-w-2xl font-normal">
                 Live visibility into individual and squad maturity across all 82 competencies. Track staffing readiness, identify training deficits, and allocate engineers with high confidence.
               </p>
             </div>
 
             {/* Macro KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-[#0f172a] p-5 rounded-none border-2 border-slate-700 shadow-xl">
-                <div className="flex items-center justify-between text-slate-300 text-xs font-bold">
+              <div className="bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm">
+                <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
                   <span>Total Active Learners</span>
                   <Users className="w-4 h-4 text-blue-400" />
                 </div>
-                <p className="text-2xl font-black text-white mt-2">{MOCK_TEAM_MEMBERS.length} Members</p>
-                <p className="text-xs text-slate-400 font-bold mt-1">
+                <p className="text-2xl font-bold text-white mt-2">{MOCK_TEAM_MEMBERS.length} Members</p>
+                <p className="text-xs text-zinc-500 mt-1">
                   {MOCK_TEAM_MEMBERS.length === 0 ? "Awaiting member signups" : "Across cross-functional pods"}
                 </p>
               </div>
 
-              <div className="bg-[#0f172a] p-5 rounded-none border-2 border-slate-700 shadow-xl">
-                <div className="flex items-center justify-between text-slate-300 text-xs font-bold">
+              <div className="bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm">
+                <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
                   <span>Org Completion Rate</span>
-                  <TrendingUp className="w-4 h-4 text-lime-400" />
+                  <TrendingUp className="w-4 h-4 text-emerald-400" />
                 </div>
-                <p className="text-2xl font-black text-lime-400 mt-2">
+                <p className="text-2xl font-bold text-emerald-400 mt-2">
                   {MOCK_TEAM_MEMBERS.length === 0 ? "0.0%" : `${completionPercentage}%`}
                 </p>
-                <p className="text-xs text-slate-400 font-semibold mt-1">Aggregate competency progress</p>
+                <p className="text-xs text-zinc-500 mt-1">Aggregate competency progress</p>
               </div>
 
-              <div className="bg-[#0f172a] p-5 rounded-none border-2 border-slate-700 shadow-xl">
-                <div className="flex items-center justify-between text-slate-300 text-xs font-bold">
+              <div className="bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm">
+                <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
                   <span>Highest Velocity Domain</span>
                   <Award className="w-4 h-4 text-amber-400" />
                 </div>
-                <p className="text-2xl font-black text-white mt-2">
+                <p className="text-2xl font-bold text-white mt-2">
                   {completedCount > 0 ? "Active" : "None yet"}
                 </p>
-                <p className="text-xs text-slate-400 font-bold mt-1">Based on topic completions</p>
+                <p className="text-xs text-zinc-500 mt-1">Based on topic completions</p>
               </div>
 
-              <div className="bg-[#0f172a] p-5 rounded-none border-2 border-slate-700 shadow-xl">
-                <div className="flex items-center justify-between text-slate-300 text-xs font-bold">
+              <div className="bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm">
+                <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
                   <span>Deficit Domain (Needs Workshop)</span>
                   <BarChart3 className="w-4 h-4 text-purple-400" />
                 </div>
-                <p className="text-2xl font-black text-white mt-2">None detected</p>
-                <p className="text-xs text-slate-400 font-bold mt-1">Based on pod submissions</p>
+                <p className="text-2xl font-bold text-white mt-2">None detected</p>
+                <p className="text-xs text-zinc-500 mt-1">Based on pod submissions</p>
               </div>
             </div>
 
             {/* Individual Learner Drilldown */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Member Selector List */}
-              <div className="bg-[#0f172a] p-5 rounded-none border-2 border-slate-700 shadow-xl space-y-3">
-                <h3 className="text-sm font-extrabold text-white flex items-center justify-between">
+              <div className="bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm space-y-3">
+                <h3 className="text-sm font-semibold text-white flex items-center justify-between">
                   <span>Pod Members</span>
-                  <span className="text-xs text-slate-400 font-normal">Click to audit</span>
+                  <span className="text-xs text-zinc-400 font-normal">Click to audit</span>
                 </h3>
 
                 {MOCK_TEAM_MEMBERS.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-slate-400 border border-dashed border-slate-800">
-                    <UserCheck className="w-8 h-8 text-slate-500 mx-auto mb-2 opacity-50" />
-                    <p className="font-semibold text-slate-300">No Learners Enrolled Yet</p>
-                    <p className="text-[11px] text-slate-500 mt-1">Learners will appear here as they register and start curriculum modules.</p>
+                  <div className="p-6 text-center text-xs text-zinc-400 border border-dashed border-zinc-800 rounded-lg">
+                    <UserCheck className="w-8 h-8 text-zinc-600 mx-auto mb-2 opacity-50" />
+                    <p className="font-medium text-zinc-300">No Learners Enrolled Yet</p>
+                    <p className="text-[11px] text-zinc-500 mt-1">Learners will appear here as they register and start curriculum modules.</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -568,27 +558,27 @@ export default function TXLLearningPortal() {
                       <button
                         key={member.id}
                         onClick={() => setSelectedMemberId(member.id)}
-                        className={`w-full p-3 rounded-none border-2 text-left transition flex items-center justify-between ${
+                        className={`w-full p-3 rounded-lg border text-left transition flex items-center justify-between ${
                           selectedMemberId === member.id
-                            ? "bg-[#142617] border-[#67E14B] shadow-md shadow-lime-500/20"
-                            : "bg-[#090d16] border-slate-800 hover:border-slate-700"
+                            ? "bg-zinc-800/90 border-zinc-600 shadow-sm"
+                            : "bg-[#0e0f12] border-zinc-800 hover:border-zinc-700"
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <div className="w-9 h-9 rounded-none bg-slate-800 text-xs font-black text-white flex items-center justify-center border border-slate-700">
+                          <div className="w-9 h-9 rounded-full bg-zinc-800 text-xs font-semibold text-white flex items-center justify-center border border-zinc-700">
                             {member.avatar}
                           </div>
                           <div>
-                            <p className="text-xs font-bold text-white">{member.name}</p>
-                            <p className="text-[11px] text-lime-400 font-medium">{member.role}</p>
+                            <p className="text-xs font-semibold text-white">{member.name}</p>
+                            <p className="text-[11px] text-zinc-400 font-normal">{member.role}</p>
                           </div>
                         </div>
 
                         <div className="text-right">
-                          <span className="text-xs font-black text-lime-400">
+                          <span className="text-xs font-bold text-emerald-400">
                             {member.id === "user-1" ? `${completionPercentage}%` : "0%"}
                           </span>
-                          <p className="text-[9px] text-slate-400 font-semibold">Readiness</p>
+                          <p className="text-[9px] text-zinc-500 font-normal">Readiness</p>
                         </div>
                       </button>
                     ))}
@@ -597,50 +587,50 @@ export default function TXLLearningPortal() {
               </div>
 
               {/* Detailed Member Inspection View */}
-              <div className="lg:col-span-2 bg-[#0f172a] p-6 rounded-none border-2 border-slate-700 shadow-xl space-y-6">
+              <div className="lg:col-span-2 bg-[#121316] p-6 rounded-xl border border-zinc-800/80 shadow-sm space-y-6">
                 {(() => {
                   const currentMember =
                     MOCK_TEAM_MEMBERS.find((m) => m.id === selectedMemberId) || MOCK_TEAM_MEMBERS[0]
 
                   if (!currentMember) {
                     return (
-                      <div className="p-12 text-center text-xs text-slate-400 border border-dashed border-slate-800">
-                        <GraduationCap className="w-10 h-10 text-slate-500 mx-auto mb-3 opacity-50" />
-                        <p className="text-sm font-bold text-white">Select a Learner to Audit</p>
-                        <p className="text-xs text-slate-400 mt-1">Audit individual competency readiness and curriculum pacing once team members register.</p>
+                      <div className="p-12 text-center text-xs text-zinc-400 border border-dashed border-zinc-800 rounded-lg">
+                        <GraduationCap className="w-10 h-10 text-zinc-600 mx-auto mb-3 opacity-50" />
+                        <p className="text-sm font-semibold text-white">Select a Learner to Audit</p>
+                        <p className="text-xs text-zinc-500 mt-1">Audit individual competency readiness and curriculum pacing once team members register.</p>
                       </div>
                     )
                   }
 
                   return (
                     <>
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                      <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
                         <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 rounded-none bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-base font-extrabold text-white shadow-lg">
+                          <div className="w-12 h-12 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-base font-semibold text-white">
                             {currentMember.avatar}
                           </div>
                           <div>
-                            <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                            <h3 className="text-base font-semibold text-white flex items-center gap-2">
                               {currentMember.name}
-                              <span className="text-xs px-2 py-0.5 rounded-none bg-[#142617] text-[#7FE866] border border-[#67E14B]/60 font-bold">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700/60 font-medium">
                                 {currentMember.role}
                               </span>
                             </h3>
-                            <p className="text-xs text-slate-300 font-medium">{currentMember.email}</p>
+                            <p className="text-xs text-zinc-400 font-normal">{currentMember.email}</p>
                           </div>
                         </div>
 
                         <div className="text-right">
-                          <span className="text-2xl font-black text-lime-400">
+                          <span className="text-2xl font-bold text-emerald-400">
                             {currentMember.id === "user-1" ? completedCount : 0}
                           </span>
-                          <span className="text-xs text-slate-400 font-bold"> / {totalTopicsCount} topics</span>
+                          <span className="text-xs text-zinc-500 font-normal"> / {totalTopicsCount} topics</span>
                         </div>
                       </div>
 
                       {/* Domain Breakdown for this member */}
                       <div>
-                        <h4 className="text-xs font-black text-slate-300 uppercase tracking-wider mb-3">
+                        <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
                           Domain Proficiency Breakdown
                         </h4>
                         <div className="space-y-3">
@@ -653,15 +643,15 @@ export default function TXLLearningPortal() {
 
                             return (
                               <div key={domain.id} className="text-xs">
-                                <div className="flex justify-between text-slate-300 mb-1 font-semibold">
+                                <div className="flex justify-between text-zinc-300 mb-1 font-medium">
                                   <span>{domain.code} · {domain.name}</span>
-                                  <span className="font-extrabold text-lime-400">
+                                  <span className="font-semibold text-emerald-400">
                                     {domainCompleted}/{domain.topics.length} ({domainPct}%)
                                   </span>
                                 </div>
-                                <div className="w-full bg-[#090d16] rounded-none h-2 overflow-hidden border border-slate-800">
+                                <div className="w-full bg-[#0a0a0c] rounded-full h-2 overflow-hidden border border-zinc-800">
                                   <div
-                                    className="bg-[#67E14B] h-full rounded-none transition-all shadow-sm shadow-lime-500/50"
+                                    className="bg-emerald-500 h-full rounded-full transition-all"
                                     style={{ width: `${domainPct}%` }}
                                   />
                                 </div>
@@ -672,8 +662,8 @@ export default function TXLLearningPortal() {
                       </div>
 
                       {/* Recent Notes by this member */}
-                      <div className="pt-4 border-t border-slate-800">
-                        <h4 className="text-xs font-black text-slate-300 uppercase tracking-wider mb-3">
+                      <div className="pt-4 border-t border-zinc-800">
+                        <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
                           Recent Implementation Notes
                         </h4>
                         {currentMember.id === "user-1" && Object.keys(userNotes).length > 0 ? (
@@ -681,15 +671,15 @@ export default function TXLLearningPortal() {
                             {Object.entries(userNotes).map(([tid, note]) => {
                               const t = CURRICULUM_DOMAINS.flatMap((d) => d.topics).find((i) => i.id === tid)
                               return (
-                                <div key={tid} className="p-3 rounded-none bg-[#090d16] border border-lime-500/30 text-xs">
-                                  <p className="font-bold text-lime-400">{t?.title || tid}</p>
-                                  <p className="text-slate-200 mt-1 font-mono text-[11px]">{note}</p>
+                                <div key={tid} className="p-3 rounded-lg bg-[#0a0a0c] border border-zinc-800/80 text-xs">
+                                  <p className="font-semibold text-zinc-200">{t?.title || tid}</p>
+                                  <p className="text-zinc-400 mt-1 font-mono text-[11px]">{note}</p>
                                 </div>
                               )
                             })}
                           </div>
                         ) : (
-                          <p className="text-xs text-slate-400 italic">No notes logged yet for this member.</p>
+                          <p className="text-xs text-zinc-500 italic">No notes logged yet for this member.</p>
                         )}
                       </div>
                     </>
@@ -704,17 +694,17 @@ export default function TXLLearningPortal() {
       {/* ================= NOTES MODAL ================= */}
       {activeModalTopic && !isShareModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0f172a] border-2 border-slate-700 rounded-none max-w-lg w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-[#121316] border border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
             <div>
-              <span className="text-[11px] font-black text-black bg-[#67E14B] px-2.5 py-0.5 rounded-none uppercase tracking-wider">
+              <span className="text-[11px] font-medium text-zinc-400 bg-zinc-800/80 px-2.5 py-0.5 rounded-full border border-zinc-700/50">
                 Personal Learning Note
               </span>
-              <h2 className="text-lg font-black text-white mt-1.5">{activeModalTopic.title}</h2>
-              <p className="text-xs text-slate-200 mt-0.5 leading-relaxed">{activeModalTopic.description}</p>
+              <h2 className="text-lg font-bold text-white mt-2 tracking-tight">{activeModalTopic.title}</h2>
+              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{activeModalTopic.description}</p>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-200 mb-1.5">
+              <label className="block text-xs font-medium text-zinc-300 mb-1.5">
                 Takeaways / Implementation Details:
               </label>
               <textarea
@@ -722,20 +712,20 @@ export default function TXLLearningPortal() {
                 value={noteDraft}
                 onChange={(e) => setNoteDraft(e.target.value)}
                 placeholder="Write your personal observations, key takeaways, and how this applies to client deliverables..."
-                className="w-full bg-[#090d16] border-2 border-slate-700 rounded-none p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#67E14B] font-mono leading-relaxed"
+                className="w-full bg-[#0a0a0c] border border-zinc-800 rounded-lg p-3 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-blue-500 font-mono leading-relaxed"
               />
             </div>
 
-            <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end space-x-3 pt-3 border-t border-zinc-800/80">
               <button
                 onClick={() => setActiveModalTopic(null)}
-                className="px-4 py-2 rounded-none text-xs font-bold text-slate-300 hover:text-white transition"
+                className="px-4 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveNote}
-                className="px-4 py-2 rounded-none text-xs font-black bg-[#67E14B] hover:bg-lime-300 text-black shadow-lg transition"
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-white hover:bg-zinc-200 text-black shadow transition"
               >
                 Save Note
               </button>
@@ -747,17 +737,17 @@ export default function TXLLearningPortal() {
       {/* ================= SHARE MODAL ================= */}
       {activeModalTopic && isShareModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0f172a] border-2 border-slate-700 rounded-none max-w-lg w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-[#121316] border border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
             <div>
-              <span className="text-[11px] font-black text-[#7FE866] bg-[#142617] border border-[#67E14B]/60 px-2.5 py-0.5 rounded-none uppercase tracking-wider flex items-center gap-1 w-fit">
-                <Share2 className="w-3 h-3" /> Share with Team Pod
+              <span className="text-[11px] font-medium text-zinc-300 bg-zinc-800/80 border border-zinc-700/60 px-2.5 py-0.5 rounded-full flex items-center gap-1 w-fit">
+                <Share2 className="w-3 h-3 text-blue-400" /> Share with Team Pod
               </span>
-              <h2 className="text-lg font-black text-white mt-1.5">Share: {activeModalTopic.title}</h2>
-              <p className="text-xs text-slate-200 mt-0.5">Post your practical takeaway so the rest of the unit can benefit.</p>
+              <h2 className="text-lg font-bold text-white mt-2 tracking-tight">Share: {activeModalTopic.title}</h2>
+              <p className="text-xs text-zinc-400 mt-1">Post your practical takeaway so the rest of the unit can benefit.</p>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-200 mb-1.5">
+              <label className="block text-xs font-medium text-zinc-300 mb-1.5">
                 Your Takeaway / Summary:
               </label>
               <textarea
@@ -765,23 +755,23 @@ export default function TXLLearningPortal() {
                 value={shareDraft}
                 onChange={(e) => setShareDraft(e.target.value)}
                 placeholder="Share your practical takeaway or how you applied this in your current project..."
-                className="w-full bg-[#090d16] border-2 border-slate-700 rounded-none p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#67E14B] font-sans"
+                className="w-full bg-[#0a0a0c] border border-zinc-800 rounded-lg p-3 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-blue-500 font-sans"
               />
             </div>
 
-            <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end space-x-3 pt-3 border-t border-zinc-800/80">
               <button
                 onClick={() => {
                   setIsShareModalOpen(false)
                   setActiveModalTopic(null)
                 }}
-                className="px-4 py-2 rounded-none text-xs font-bold text-slate-300 hover:text-white transition"
+                className="px-4 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handlePublishShare}
-                className="px-4 py-2 rounded-none text-xs font-black bg-[#67E14B] hover:bg-lime-300 text-black shadow-lg transition"
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-white hover:bg-zinc-200 text-black shadow transition"
               >
                 Publish to Team Feed
               </button>

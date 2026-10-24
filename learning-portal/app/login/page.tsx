@@ -45,7 +45,13 @@ export default function LoginPage() {
     setLoading(true)
     setErrorMsg(null)
     try {
-      const res = await fetch("/api/auth/blocks/initiate")
+      const origin = typeof window !== "undefined" ? window.location.origin : ""
+      const redirectUri = origin ? `${origin}/login/callback` : ""
+      const url = redirectUri
+        ? `/api/auth/blocks/initiate?redirectUri=${encodeURIComponent(redirectUri)}`
+        : "/api/auth/blocks/initiate"
+
+      const res = await fetch(url)
       const data = await res.json()
       if (data.redirectUrl) {
         // Use a link with rel="noreferrer" and no-referrer policy so IAM doesn't reject with Invalid_Origin_Or_Referer

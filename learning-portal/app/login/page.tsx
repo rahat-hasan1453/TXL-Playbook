@@ -48,7 +48,13 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/blocks/initiate")
       const data = await res.json()
       if (data.redirectUrl) {
-        window.location.assign(data.redirectUrl)
+        // Use a link with rel="noreferrer" and no-referrer policy so IAM doesn't reject with Invalid_Origin_Or_Referer
+        const link = document.createElement("a")
+        link.href = data.redirectUrl
+        link.rel = "noreferrer"
+        link.referrerPolicy = "no-referrer"
+        document.body.appendChild(link)
+        link.click()
       } else {
         throw new Error(data.error || "Failed to obtain Blocks IAM login redirect URL")
       }

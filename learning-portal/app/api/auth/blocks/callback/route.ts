@@ -40,10 +40,34 @@ export async function POST(request: NextRequest) {
     const userObj = ((cbData?.user || {}) as Record<string, unknown>)
     const userEmail = ((userObj.email || cbData?.email || "blocks.user@selise.ch") as string)
     const userName = ((userObj.name || cbData?.name || "SELISE Blocks User") as string)
-    const roles = Array.isArray(cbData?.roles) ? cbData.roles : Array.isArray(userObj.roles) ? userObj.roles : []
+    const rawRoles = Array.isArray(cbData?.roles)
+      ? cbData.roles
+      : Array.isArray(userObj.roles)
+      ? userObj.roles
+      : typeof cbData?.role === "string"
+      ? [cbData.role]
+      : typeof userObj.role === "string"
+      ? [userObj.role]
+      : []
+
+    const normalizedRoles = rawRoles.map((r: unknown) => {
+      if (typeof r === "string") return r.toLowerCase().trim()
+      if (r && typeof r === "object") {
+        const obj = r as Record<string, unknown>
+        return String(obj.slug || obj.name || obj.role || obj.key || "").toLowerCase().trim()
+      }
+      return ""
+    })
+
     const isHead =
-      roles.includes("UNIT_HEAD") ||
-      roles.includes("EDUCATOR") ||
+      normalizedRoles.some((r: string) =>
+        r === "educator" ||
+        r === "unit_head" ||
+        r === "unit-head" ||
+        r === "unithead" ||
+        r === "lead" ||
+        r === "admin"
+      ) ||
       userEmail.toLowerCase().includes("lead") ||
       userEmail.toLowerCase().includes("head") ||
       userEmail.toLowerCase().includes("educator")

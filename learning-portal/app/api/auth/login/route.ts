@@ -19,9 +19,10 @@ export async function POST(req: Request) {
     }
 
     // Determine target role centrally
+    const reqRole = (body.role || '').toString().toUpperCase()
     const isUnitHead =
-      body.role === 'UNIT_HEAD' ||
-      body.role === 'EDUCATOR' ||
+      reqRole === 'UNIT_HEAD' ||
+      reqRole === 'EDUCATOR' ||
       email.includes('lead') ||
       email.includes('head') ||
       email.includes('educator') ||

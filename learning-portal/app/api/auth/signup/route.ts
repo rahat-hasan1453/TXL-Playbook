@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { blocksClient } from "@/lib/blocks"
+import { hashPassword } from "@/lib/auth"
+import { memoryStore } from "@/lib/prisma"
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,11 +24,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (password.length < 8) {
+      return NextResponse.json(
+        { error: "Password must be at least 8 characters" },
+        { status: 400 }
+      )
+    }
+
+    const cleanEmail = email.trim().toLowerCase()
+
     let blocksResult: unknown = null
     if (viaBlocks) {
       try {
         blocksResult = await blocksClient.auth.signup({
-          email,
+          email: cleanEmail,
           password,
           firstName: firstName || "Learner",
           lastName: lastName || "User",
@@ -39,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Set authenticated portal cookies
     const cookieStore = await cookies()
     const maxAge = 60 * 60 * 24 * 7 // 7 days
-    const fullName = `${firstName || ""} ${lastName || ""}`.trim() || email.split("@")[0]
+    const fullName = `${firstName || ""} ${lastName || ""}`.trim() || cleanEmail.split("@")[0]
     const initials =
       fullName
         .split(" ")
@@ -50,9 +61,21 @@ export async function POST(request: NextRequest) {
 
     const resolvedUserId = (blocksResult as { itemId?: string })?.itemId || `user-${Date.now()}`
 
+    // Store user securely in local store for credential verification
+    memoryStore.users.set(cleanEmail, {
+      id: resolvedUserId,
+      email: cleanEmail,
+      passwordHash: hashPassword(password),
+      name: fullName,
+      role: role as "LEARNER" | "UNIT_HEAD",
+      discipline,
+      avatar: initials,
+    })
+    memoryStore.userRoles.set(cleanEmail, role as "LEARNER" | "UNIT_HEAD")
+
     cookieStore.set("txl_user_role", role, { path: "/", maxAge })
     cookieStore.set("txl_user_id", resolvedUserId, { path: "/", maxAge })
-    cookieStore.set("txl_user_email", email, { path: "/", maxAge })
+    cookieStore.set("txl_user_email", cleanEmail, { path: "/", maxAge })
     cookieStore.set("txl_user_name", fullName, { path: "/", maxAge })
     cookieStore.set("txl_user_discipline", discipline, { path: "/", maxAge })
     cookieStore.set("txl_user_avatar", initials, { path: "/", maxAge })
@@ -62,7 +85,7 @@ export async function POST(request: NextRequest) {
       blocksResult,
       user: {
         id: resolvedUserId,
-        email,
+        email: cleanEmail,
         name: fullName,
         role,
         discipline,

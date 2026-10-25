@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers'
+import crypto from 'crypto'
 
 export type UserRole = 'LEARNER' | 'UNIT_HEAD'
 
@@ -9,6 +10,15 @@ export interface UserSession {
   role: UserRole
   discipline: string
   avatar: string
+}
+
+export function hashPassword(password: string): string {
+  const salt = 'txl-playbook-2026-auth'
+  return crypto.createHmac('sha256', salt).update(password).digest('hex')
+}
+
+export function verifyPassword(password: string, hash: string): boolean {
+  return hashPassword(password) === hash
 }
 
 export async function getServerSession(): Promise<{ user: UserSession | null }> {

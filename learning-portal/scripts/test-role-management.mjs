@@ -26,10 +26,34 @@ async function runRoleTests() {
   // ----------------------------------------------------
   console.log('📌 [Test 1] Testing Unit Head Authentication Flow...')
   try {
+    // Register Unit Head account
+    await fetch(`${BASE_URL}/api/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'sarah.lead@selise.ch',
+        password: 'Password123!',
+        firstName: 'Sarah',
+        lastName: 'Lead',
+        role: 'UNIT_HEAD',
+        discipline: 'Leadership & Strategy',
+        viaBlocks: false,
+      }),
+    })
+
+    // Test 1A: Wrong password must be rejected with 401
+    const wrongPassRes = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'sarah.lead@selise.ch', password: 'wrongpassword' }),
+    })
+    assert(wrongPassRes.status === 401, 'Wrong password correctly rejected with HTTP 401 Unauthorized')
+
+    // Test 1B: Valid password logs in
     const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'sarah.lead@selise.ch' }),
+      body: JSON.stringify({ email: 'sarah.lead@selise.ch', password: 'Password123!' }),
     })
 
     const loginData = await loginRes.json()
@@ -64,10 +88,34 @@ async function runRoleTests() {
   // ----------------------------------------------------
   console.log('📌 [Test 2] Testing Learner Authentication Flow...')
   try {
+    // Register Learner account
+    await fetch(`${BASE_URL}/api/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'rahat@selise.ch',
+        password: 'Password123!',
+        firstName: 'Rahat',
+        lastName: 'Chowdhury',
+        role: 'LEARNER',
+        discipline: 'AI Product Manager',
+        viaBlocks: false,
+      }),
+    })
+
+    // Test 2A: Wrong password must be rejected with 401
+    const wrongLearnerRes = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'rahat@selise.ch', password: 'incorrect_pass' }),
+    })
+    assert(wrongLearnerRes.status === 401, 'Wrong password for learner correctly rejected with HTTP 401 Unauthorized')
+
+    // Test 2B: Valid password logs in
     const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'rahat@selise.ch' }),
+      body: JSON.stringify({ email: 'rahat@selise.ch', password: 'Password123!' }),
     })
 
     const loginData = await loginRes.json()
@@ -155,11 +203,25 @@ async function runRoleTests() {
   // ----------------------------------------------------
   console.log('📌 [Test 5] Testing Live Role Promotion Sync...')
   try {
-    // 5A: Learner logs in
+    // 5A: Register John and login
+    await fetch(`${BASE_URL}/api/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'john.developer@selise.ch',
+        password: 'Password123!',
+        firstName: 'John',
+        lastName: 'Developer',
+        role: 'LEARNER',
+        discipline: 'Product Engineer',
+        viaBlocks: false,
+      }),
+    })
+
     const learnerLoginRes = await fetch(`${BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'john.developer@selise.ch' }),
+      body: JSON.stringify({ email: 'john.developer@selise.ch', password: 'Password123!' }),
     })
     const learnerLoginData = await learnerLoginRes.json()
     const setCookieHeader = learnerLoginRes.headers.get('set-cookie') || ''

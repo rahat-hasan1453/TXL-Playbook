@@ -1,11 +1,22 @@
 // Resilient Prisma client helper that works in dev mode with or without Prisma installed
 
+export interface StoredUser {
+  id: string
+  email: string
+  passwordHash: string
+  name: string
+  role: 'LEARNER' | 'UNIT_HEAD'
+  discipline: string
+  avatar: string
+}
+
 // In-memory fallback store for development
 const memoryStore = {
   progress: new Map<string, { userId: string; topicId: string; status: string; completedAt?: Date | null }>(),
   notes: new Map<string, { userId: string; topicId: string; content: string; updatedAt: Date }>(),
   shared: new Array<{ id: string; userId: string; userName: string; topicId: string; topicTitle: string; content: string; likes: number; createdAt: Date }>(),
   userRoles: new Map<string, 'LEARNER' | 'UNIT_HEAD'>(),
+  users: new Map<string, StoredUser>(),
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

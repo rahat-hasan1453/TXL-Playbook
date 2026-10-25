@@ -5,24 +5,18 @@ import { memoryStore } from "@/lib/prisma"
 
 const execAsync = promisify(exec)
 
-// Seeded cache with active Blocks IAM project assignments
-const blocksRoleCache = new Map<string, UserRole>([
-  ["rahat.akash1453@gmail.com", "UNIT_HEAD"],
-  ["rahat.hasan1453@gmail.com", "UNIT_HEAD"],
-  ["rumman.mahbub@selisegroup.com", "UNIT_HEAD"],
-  ["sarah.lead@selise.ch", "UNIT_HEAD"],
-  ["rahat.hasan@selisegroup.com", "LEARNER"],
-])
+// Dynamic cache of Blocks IAM roles
+const blocksRoleCache = new Map<string, UserRole>()
 
 let lastSyncTime = 0
-const SYNC_INTERVAL_MS = 15_000 // Throttle live Blocks CLI queries to once every 15s
+const SYNC_INTERVAL_MS = 10_000 // Throttle live Blocks CLI queries to 10s
 
 /**
  * Robustly extracts roles from any Blocks IAM data format:
- * - { default: ["educator"] }
- * - ["educator", "learner"]
- * - [{ name: "educator" }, { role: "educator" }]
- * - "educator"
+ * - { default: ["boss"] }
+ * - ["aam_public"]
+ * - [{ name: "boss" }, { role: "boss" }]
+ * - "boss"
  */
 export function extractRoles(source: unknown): string[] {
   if (!source) return []
@@ -33,7 +27,7 @@ export function extractRoles(source: unknown): string[] {
       roles.push(r.trim().toLowerCase())
     } else if (r && typeof r === "object") {
       const obj = r as Record<string, unknown>
-      const name = obj.name || obj.slug || obj.role || obj.key || obj.id
+      const name = obj.slug || obj.name || obj.role || obj.key || obj.id
       if (typeof name === "string" && name.trim()) {
         roles.push(name.trim().toLowerCase())
       }
@@ -63,10 +57,11 @@ export function extractRoles(source: unknown): string[] {
 }
 
 /**
- * Checks if extracted roles or email indicate an Educator / Unit Head role
+ * Checks if extracted roles or email indicate an Educator / Unit Head / Boss role
  */
 export function isLeadershipRole(roles: string[], email?: string): boolean {
   const leadershipKeywords = [
+    "boss",
     "educator",
     "unit_head",
     "unit-head",
@@ -79,12 +74,17 @@ export function isLeadershipRole(roles: string[], email?: string): boolean {
   const hasRole = roles.some((r) => leadershipKeywords.includes(r.toLowerCase()))
   if (hasRole) return true
 
+  // If role is explicitly normal learner/public, it is NOT leadership
+  const isExplicitLearner = roles.some((r) => r === "aam_public" || r === "learner")
+  if (isExplicitLearner) return false
+
   if (email) {
     const normalized = email.toLowerCase()
     return (
       normalized.includes("lead") ||
       normalized.includes("head") ||
-      normalized.includes("educator")
+      normalized.includes("educator") ||
+      normalized.includes("boss")
     )
   }
   return false
@@ -110,7 +110,7 @@ export function decodeJwtPayload(token?: string): Record<string, unknown> | null
  */
 export async function syncBlocksRolesFromCli(): Promise<Map<string, UserRole>> {
   const now = Date.now()
-  if (now - lastSyncTime < SYNC_INTERVAL_MS) {
+  if (now - lastSyncTime < SYNC_INTERVAL_MS && blocksRoleCache.size > 0) {
     return blocksRoleCache
   }
   lastSyncTime = now
@@ -147,15 +147,20 @@ export async function syncBlocksRolesFromCli(): Promise<Map<string, UserRole>> {
           const existingUser = memoryStore.users.get(userEmail)
           if (existingUser) {
             existingUser.role = assignedRole
-            if (isHead && (!existingUser.discipline || existingUser.discipline === "Product Track" || existingUser.discipline === "Active Track")) {
-              existingUser.discipline = "Leadership & Strategy"
+            if (isHead) {
+              if (!existingUser.discipline || existingUser.discipline === "Product Track" || existingUser.discipline === "Active Track") {
+                existingUser.discipline = "Leadership & Strategy"
+              }
+            } else {
+              if (existingUser.discipline === "Leadership & Strategy") {
+                existingUser.discipline = "Product Track"
+              }
             }
           }
         }
       }
     }
   } catch (err) {
-    // If CLI cannot be reached (e.g. sandbox or serverless), silently fall back to cached roles
     console.warn("Blocks IAM CLI role sync (using cached roles):", err instanceof Error ? err.message : err)
   }
 
@@ -168,11 +173,7 @@ export async function syncBlocksRolesFromCli(): Promise<Map<string, UserRole>> {
 export async function resolveUserBlocksRole(email: string): Promise<UserRole> {
   const normalized = email.toLowerCase().trim()
 
-  // 1. Check memoryStore.userRoles first
-  const memoryRole = memoryStore.userRoles.get(normalized)
-  if (memoryRole === "UNIT_HEAD") return "UNIT_HEAD"
-
-  // 2. Refresh/check cache from Blocks IAM CLI
+  // Always refresh/check from Blocks IAM
   await syncBlocksRolesFromCli()
 
   const cached = blocksRoleCache.get(normalized)
@@ -181,7 +182,11 @@ export async function resolveUserBlocksRole(email: string): Promise<UserRole> {
     return cached
   }
 
-  // 3. Fallback to keyword matching if email indicates leadership
+  // Fallback check memoryStore
+  const memoryRole = memoryStore.userRoles.get(normalized)
+  if (memoryRole) return memoryRole
+
+  // Fallback to keyword matching if email indicates leadership
   if (isLeadershipRole([], normalized)) {
     return "UNIT_HEAD"
   }

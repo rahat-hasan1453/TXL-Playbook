@@ -22,24 +22,16 @@ export async function GET() {
   // Live synchronization with Blocks IAM role assignment
   const blocksRole = await resolveUserBlocksRole(email)
 
-  // Also check if email pattern indicates leadership role
-  const isEmailLead =
-    email.includes('lead') ||
-    email.includes('head') ||
-    email.includes('educator') ||
-    email.includes('admin')
+  // Direct synchronization: Blocks IAM role takes highest authority
+  const resolvedRole: UserRole = blocksRole || storeRole || currentRole
 
-  const resolvedRole: UserRole =
-    blocksRole === 'UNIT_HEAD' || storeRole === 'UNIT_HEAD' || isEmailLead
-      ? 'UNIT_HEAD'
-      : (storeRole || currentRole)
-
-  // If role has changed or discipline is outdated for Unit Head, update cookies dynamically
+  // If role has changed or discipline is outdated for Unit Head/Learner, update cookies dynamically
   const needsDisciplineUpdate =
-    resolvedRole === 'UNIT_HEAD' &&
-    (!session.user.discipline ||
-      session.user.discipline === 'Active Track' ||
-      session.user.discipline === 'Product Track')
+    (resolvedRole === 'UNIT_HEAD' &&
+      (!session.user.discipline ||
+        session.user.discipline === 'Active Track' ||
+        session.user.discipline === 'Product Track')) ||
+    (resolvedRole === 'LEARNER' && session.user.discipline === 'Leadership & Strategy')
 
   if (resolvedRole !== currentRole || needsDisciplineUpdate) {
     const cookieOptions = {
@@ -54,8 +46,10 @@ export async function GET() {
     let updatedDiscipline = session.user.discipline
     if (resolvedRole === 'UNIT_HEAD') {
       updatedDiscipline = 'Leadership & Strategy'
-      cookieStore.set('txl_user_discipline', updatedDiscipline, cookieOptions)
+    } else {
+      updatedDiscipline = 'Cloud Systems Engineer'
     }
+    cookieStore.set('txl_user_discipline', updatedDiscipline, cookieOptions)
 
     // Update in-memory user record
     const existing = memoryStore.users.get(email)

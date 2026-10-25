@@ -51,17 +51,14 @@ export async function POST(req: Request) {
       }
 
       // Password matches! Issue authenticated session with synchronized role
-      const role: UserRole =
-        blocksIamRole === 'UNIT_HEAD' || existingUser.role === 'UNIT_HEAD'
-          ? 'UNIT_HEAD'
-          : defaultRole
+      const role: UserRole = blocksIamRole || existingUser.role || defaultRole
 
       const isHead = role === 'UNIT_HEAD'
       const id = existingUser.id
       const name = existingUser.name
       const discipline = isHead
         ? 'Leadership & Strategy'
-        : (existingUser.discipline || 'Cloud Systems Engineer')
+        : (existingUser.discipline === 'Leadership & Strategy' ? 'Cloud Systems Engineer' : (existingUser.discipline || 'Cloud Systems Engineer'))
       const avatar = existingUser.avatar
 
       // Update user record in memoryStore with synced role

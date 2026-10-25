@@ -3,6 +3,12 @@ import { cookies } from 'next/headers'
 import { UserRole, verifyPassword, hashPassword } from '@/lib/auth'
 import { memoryStore } from '@/lib/prisma'
 import { blocksClient } from '@/lib/blocks'
+import {
+  resolveUserBlocksRole,
+  decodeJwtPayload,
+  extractRoles,
+  isLeadershipRole,
+} from '@/lib/blocks-auth'
 
 export async function POST(req: Request) {
   try {
@@ -18,15 +24,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Password is required' }, { status: 400 })
     }
 
+    // Live sync check with SELISE Blocks IAM role assignment
+    const blocksIamRole = await resolveUserBlocksRole(email)
+
     // Determine target role centrally
     const reqRole = (body.role || '').toString().toUpperCase()
     const isUnitHead =
+      blocksIamRole === 'UNIT_HEAD' ||
       reqRole === 'UNIT_HEAD' ||
       reqRole === 'EDUCATOR' ||
-      email.includes('lead') ||
-      email.includes('head') ||
-      email.includes('educator') ||
-      email.includes('admin')
+      isLeadershipRole([], email)
 
     const defaultRole: UserRole = isUnitHead ? 'UNIT_HEAD' : 'LEARNER'
 
@@ -43,12 +50,25 @@ export async function POST(req: Request) {
         )
       }
 
-      // Password matches! Issue authenticated session
-      const role = existingUser.role || defaultRole
+      // Password matches! Issue authenticated session with synchronized role
+      const role: UserRole =
+        blocksIamRole === 'UNIT_HEAD' || existingUser.role === 'UNIT_HEAD'
+          ? 'UNIT_HEAD'
+          : defaultRole
+
+      const isHead = role === 'UNIT_HEAD'
       const id = existingUser.id
       const name = existingUser.name
-      const discipline = existingUser.discipline
+      const discipline = isHead
+        ? 'Leadership & Strategy'
+        : (existingUser.discipline || 'Cloud Systems Engineer')
       const avatar = existingUser.avatar
+
+      // Update user record in memoryStore with synced role
+      existingUser.role = role
+      existingUser.discipline = discipline
+      memoryStore.userRoles.set(email, role)
+      memoryStore.userRoles.set(id, role)
 
       const cookieStore = await cookies()
       const cookieOptions = {
@@ -100,19 +120,48 @@ export async function POST(req: Request) {
       )
     }
 
-    // Authenticated through Blocks IAM!
-    const role: UserRole = defaultRole
-    const derivedName = email
-      ? email
-          .split('@')[0]
-          .split('.')
-          .map((s: string) => (s ? s[0].toUpperCase() + s.slice(1) : ''))
-          .join(' ')
-      : (isUnitHead ? 'Unit Head' : 'Learner')
+    // Authenticated through Blocks IAM! Decode token claims for live roles
+    const accessToken = (blocksAuthUser.access_token || blocksAuthUser.accessToken) as string | undefined
+    const idToken = (blocksAuthUser.id_token || blocksAuthUser.idToken) as string | undefined
+    const accessClaims = decodeJwtPayload(accessToken) || {}
+    const idClaims = decodeJwtPayload(idToken) || {}
+
+    const gatheredRoles: unknown[] = [
+      blocksAuthUser.roles,
+      blocksAuthUser.role,
+      accessClaims.roles,
+      accessClaims.role,
+      (accessClaims.realm_access as Record<string, unknown>)?.roles,
+      idClaims.roles,
+      idClaims.role,
+    ]
+
+    const extractedRoles: string[] = []
+    for (const r of gatheredRoles) {
+      if (r) extractedRoles.push(...extractRoles(r))
+    }
+
+    const tokenIsHead = isLeadershipRole(extractedRoles, email)
+    const role: UserRole = (tokenIsHead || blocksIamRole === 'UNIT_HEAD' || isUnitHead) ? 'UNIT_HEAD' : 'LEARNER'
+
+    const derivedName =
+      (idClaims.name as string) ||
+      (accessClaims.name as string) ||
+      (email
+        ? email
+            .split('@')[0]
+            .split('.')
+            .map((s: string) => (s ? s[0].toUpperCase() + s.slice(1) : ''))
+            .join(' ')
+        : (role === 'UNIT_HEAD' ? 'Unit Head' : 'Learner'))
+
     const name = body.name || derivedName
-    const id = (blocksAuthUser?.id as string) || `user-${Date.now()}`
+    const id = (idClaims.sub as string) || (blocksAuthUser?.id as string) || `user-${Date.now()}`
     const discipline =
-      body.discipline || (isUnitHead ? 'Leadership & Strategy' : 'Product Track')
+      role === 'UNIT_HEAD'
+        ? 'Leadership & Strategy'
+        : (body.discipline || 'Cloud Systems Engineer')
+
     const avatar =
       body.avatar ||
       name
@@ -121,9 +170,9 @@ export async function POST(req: Request) {
         .join('')
         .slice(0, 2)
         .toUpperCase() ||
-      (isUnitHead ? 'UH' : 'LN')
+      (role === 'UNIT_HEAD' ? 'UH' : 'LN')
 
-    // Cache verified credentials for subsequent logins
+    // Cache verified credentials and resolved role for subsequent logins
     memoryStore.users.set(email, {
       id,
       email,
@@ -133,6 +182,8 @@ export async function POST(req: Request) {
       discipline,
       avatar,
     })
+    memoryStore.userRoles.set(email, role)
+    memoryStore.userRoles.set(id, role)
 
     const cookieStore = await cookies()
     const cookieOptions = {

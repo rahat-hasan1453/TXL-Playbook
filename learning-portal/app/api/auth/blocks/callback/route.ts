@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { blocksClient } from "@/lib/blocks"
+import {
+  decodeJwtPayload,
+  extractRoles,
+  isLeadershipRole,
+  resolveUserBlocksRole,
+} from "@/lib/blocks-auth"
+import { memoryStore } from "@/lib/prisma"
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,55 +39,90 @@ export async function POST(request: NextRequest) {
       console.warn("Blocks callback warning (handled gracefully):", cbErr)
     }
 
+    const cbData = callbackResponse as Record<string, unknown> | null
+    const userObj = ((cbData?.user || {}) as Record<string, unknown>)
+
+    // Decode tokens if returned in standard OIDC response
+    const idToken = (cbData?.id_token || cbData?.idToken) as string | undefined
+    const accessToken = (cbData?.access_token || cbData?.accessToken) as string | undefined
+    const idClaims = decodeJwtPayload(idToken) || {}
+    const accessClaims = decodeJwtPayload(accessToken) || {}
+
+    const userEmail = (
+      idClaims.email ||
+      accessClaims.email ||
+      userObj.email ||
+      cbData?.email ||
+      "blocks.user@selise.ch"
+    ) as string
+
+    const userName = (
+      idClaims.name ||
+      idClaims.preferred_username ||
+      accessClaims.name ||
+      userObj.name ||
+      cbData?.name ||
+      "SELISE Blocks User"
+    ) as string
+
+    const userId = (
+      idClaims.sub ||
+      accessClaims.sub ||
+      userObj.id ||
+      cbData?.id ||
+      `blocks-user-${Date.now()}`
+    ) as string
+
+    // Extract all candidate roles
+    const candidateRoles: unknown[] = [
+      cbData?.roles,
+      cbData?.role,
+      userObj.roles,
+      userObj.role,
+      idClaims.roles,
+      idClaims.role,
+      (idClaims.realm_access as Record<string, unknown>)?.roles,
+      accessClaims.roles,
+      accessClaims.role,
+      (accessClaims.realm_access as Record<string, unknown>)?.roles,
+    ]
+
+    const extractedRoles: string[] = []
+    for (const cand of candidateRoles) {
+      if (cand) extractedRoles.push(...extractRoles(cand))
+    }
+
+    // Check with live Blocks CLI synchronization as well
+    const blocksSyncedRole = await resolveUserBlocksRole(userEmail)
+
+    const isHead =
+      blocksSyncedRole === "UNIT_HEAD" ||
+      isLeadershipRole(extractedRoles, userEmail)
+
+    const role = isHead ? "UNIT_HEAD" : "LEARNER"
+    const discipline = isHead ? "Leadership & Strategy" : "Cloud Systems Engineer"
+    const avatar = userName.split(" ").map((s) => s[0]).join("").toUpperCase().slice(0, 2) || (isHead ? "UH" : "SB")
+
+    // Update memoryStore cache
+    memoryStore.userRoles.set(userEmail.toLowerCase(), role)
+    memoryStore.userRoles.set(userId, role)
+
     // Set authenticated portal cookies
     const cookieStore = await cookies()
     const maxAge = 60 * 60 * 24 * 7 // 7 days
+    const cookieOptions = {
+      path: "/",
+      httpOnly: false,
+      sameSite: "lax" as const,
+      maxAge,
+    }
 
-    const cbData = callbackResponse as Record<string, unknown> | null
-    const userObj = ((cbData?.user || {}) as Record<string, unknown>)
-    const userEmail = ((userObj.email || cbData?.email || "blocks.user@selise.ch") as string)
-    const userName = ((userObj.name || cbData?.name || "SELISE Blocks User") as string)
-    const rawRoles = Array.isArray(cbData?.roles)
-      ? cbData.roles
-      : Array.isArray(userObj.roles)
-      ? userObj.roles
-      : typeof cbData?.role === "string"
-      ? [cbData.role]
-      : typeof userObj.role === "string"
-      ? [userObj.role]
-      : []
-
-    const normalizedRoles = rawRoles.map((r: unknown) => {
-      if (typeof r === "string") return r.toLowerCase().trim()
-      if (r && typeof r === "object") {
-        const obj = r as Record<string, unknown>
-        return String(obj.slug || obj.name || obj.role || obj.key || "").toLowerCase().trim()
-      }
-      return ""
-    })
-
-    const isHead =
-      normalizedRoles.some((r: string) =>
-        r === "educator" ||
-        r === "unit_head" ||
-        r === "unit-head" ||
-        r === "unithead" ||
-        r === "lead" ||
-        r === "admin"
-      ) ||
-      userEmail.toLowerCase().includes("lead") ||
-      userEmail.toLowerCase().includes("head") ||
-      userEmail.toLowerCase().includes("educator")
-    const role = isHead ? "UNIT_HEAD" : "LEARNER"
-    const discipline = isHead ? "Leadership & Strategy" : "Cloud Systems Engineer"
-    const avatar = userName.split(" ").map((s) => s[0]).join("").toUpperCase().slice(0, 2) || "SB"
-
-    cookieStore.set("txl_user_role", role, { path: "/", maxAge })
-    cookieStore.set("txl_user_id", ((userObj.id || cbData?.id || "blocks-user-1") as string), { path: "/", maxAge })
-    cookieStore.set("txl_user_email", userEmail, { path: "/", maxAge })
-    cookieStore.set("txl_user_name", userName, { path: "/", maxAge })
-    cookieStore.set("txl_user_discipline", discipline, { path: "/", maxAge })
-    cookieStore.set("txl_user_avatar", avatar, { path: "/", maxAge })
+    cookieStore.set("txl_user_role", role, cookieOptions)
+    cookieStore.set("txl_user_id", userId, cookieOptions)
+    cookieStore.set("txl_user_email", userEmail, cookieOptions)
+    cookieStore.set("txl_user_name", userName, cookieOptions)
+    cookieStore.set("txl_user_discipline", discipline, cookieOptions)
+    cookieStore.set("txl_user_avatar", avatar, cookieOptions)
 
     return NextResponse.json({
       ok: true,
@@ -89,6 +131,8 @@ export async function POST(request: NextRequest) {
         role,
         name: userName,
         email: userEmail,
+        discipline,
+        avatar,
       },
     })
   } catch (err: unknown) {

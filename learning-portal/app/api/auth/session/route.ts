@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { getServerSession, UserRole } from '@/lib/auth'
 import { memoryStore } from '@/lib/prisma'
+import { resolveUserBlocksRole } from '@/lib/blocks-auth'
 
 export async function GET() {
   const session = await getServerSession()
@@ -18,6 +19,9 @@ export async function GET() {
     memoryStore.userRoles.get(session.user.id) ||
     memoryStore.userRoles.get(email)
 
+  // Live synchronization with Blocks IAM role assignment
+  const blocksRole = await resolveUserBlocksRole(email)
+
   // Also check if email pattern indicates leadership role
   const isEmailLead =
     email.includes('lead') ||
@@ -25,10 +29,19 @@ export async function GET() {
     email.includes('educator') ||
     email.includes('admin')
 
-  const resolvedRole: UserRole = storeRole || (isEmailLead ? 'UNIT_HEAD' : currentRole)
+  const resolvedRole: UserRole =
+    blocksRole === 'UNIT_HEAD' || storeRole === 'UNIT_HEAD' || isEmailLead
+      ? 'UNIT_HEAD'
+      : (storeRole || currentRole)
 
-  // If role has changed, update cookies dynamically on the fly
-  if (resolvedRole !== currentRole) {
+  // If role has changed or discipline is outdated for Unit Head, update cookies dynamically
+  const needsDisciplineUpdate =
+    resolvedRole === 'UNIT_HEAD' &&
+    (!session.user.discipline ||
+      session.user.discipline === 'Active Track' ||
+      session.user.discipline === 'Product Track')
+
+  if (resolvedRole !== currentRole || needsDisciplineUpdate) {
     const cookieOptions = {
       path: '/',
       httpOnly: false,
@@ -39,10 +52,19 @@ export async function GET() {
     cookieStore.set('txl_user_role', resolvedRole, cookieOptions)
 
     let updatedDiscipline = session.user.discipline
-    if (resolvedRole === 'UNIT_HEAD' && (!updatedDiscipline || updatedDiscipline === 'Active Track' || updatedDiscipline === 'Product Track')) {
+    if (resolvedRole === 'UNIT_HEAD') {
       updatedDiscipline = 'Leadership & Strategy'
       cookieStore.set('txl_user_discipline', updatedDiscipline, cookieOptions)
     }
+
+    // Update in-memory user record
+    const existing = memoryStore.users.get(email)
+    if (existing) {
+      existing.role = resolvedRole
+      existing.discipline = updatedDiscipline
+    }
+    memoryStore.userRoles.set(email, resolvedRole)
+    memoryStore.userRoles.set(session.user.id, resolvedRole)
 
     const updatedUser = {
       ...session.user,
@@ -95,6 +117,9 @@ export async function PATCH(req: Request) {
         maxAge: 60 * 60 * 24 * 7,
       }
       cookieStore.set('txl_user_role', assignedRole, cookieOptions)
+      if (assignedRole === 'UNIT_HEAD') {
+        cookieStore.set('txl_user_discipline', 'Leadership & Strategy', cookieOptions)
+      }
     }
 
     return NextResponse.json({

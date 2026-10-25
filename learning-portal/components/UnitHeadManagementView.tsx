@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useEffect } from "react"
 import { Domain, Topic } from "@/lib/curriculumData"
 import { UserSession } from "@/lib/auth"
 import {
@@ -86,6 +86,42 @@ export default function UnitHeadManagementView({
       localStorage.setItem("txl_pod_learners", JSON.stringify(updated))
     }
   }
+
+  // Live real-time cross-pod learner synchronization from server
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchLiveLearners = async () => {
+      try {
+        const res = await fetch("/api/progress")
+        const data = await res.json()
+        if (isMounted && data?.learners && Array.isArray(data.learners)) {
+          setPodLearners(data.learners)
+          if (typeof window !== "undefined") {
+            localStorage.setItem("txl_pod_learners", JSON.stringify(data.learners))
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch live learners:", err)
+      }
+    }
+
+    fetchLiveLearners()
+
+    // Poll every 5 seconds for real-time progress updates across browser tabs
+    const interval = setInterval(fetchLiveLearners, 5000)
+
+    const handleFocus = () => {
+      fetchLiveLearners()
+    }
+    window.addEventListener("focus", handleFocus)
+
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+      window.removeEventListener("focus", handleFocus)
+    }
+  }, [])
 
   // Modal to dynamically enroll/add a new real learner
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false)

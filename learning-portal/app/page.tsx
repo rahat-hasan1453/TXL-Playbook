@@ -139,6 +139,35 @@ export default function TXLLearningPortal() {
   // User personal notes per topic (Topic ID -> note string)
   const [userNotes, setUserNotes] = useState<Record<string, string>>({})
 
+  // Fetch active learner's real progress and notes from server
+  useEffect(() => {
+    let isMounted = true
+    const fetchProgress = async () => {
+      try {
+        const res = await fetch("/api/progress")
+        const data = await res.json()
+        if (isMounted) {
+          if (data?.progress) {
+            setProgressState(data.progress)
+          }
+          if (data?.notes) {
+            setUserNotes(data.notes)
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load learner progress:", err)
+      }
+    }
+
+    if (currentUserRole === "LEARNER") {
+      fetchProgress()
+    }
+
+    return () => {
+      isMounted = false
+    }
+  }, [currentUserRole])
+
   // Shared learnings feed
   const [sharedLearnings, setSharedLearnings] = useState<Array<{
     id: string
@@ -171,18 +200,24 @@ export default function TXLLearningPortal() {
 
   // Toggle progress status
   const handleToggleStatus = (topicId: string) => {
+    const current = progressState[topicId]
+    const nextStatus = current === "COMPLETED" ? "NOT_STARTED" : current === "IN_PROGRESS" ? "COMPLETED" : "IN_PROGRESS"
+
     setProgressState((prev) => {
-      const current = prev[topicId]
-      if (current === "COMPLETED") {
+      if (nextStatus === "NOT_STARTED") {
         const next = { ...prev }
         delete next[topicId]
         return next
-      } else if (current === "IN_PROGRESS") {
-        return { ...prev, [topicId]: "COMPLETED" }
-      } else {
-        return { ...prev, [topicId]: "IN_PROGRESS" }
       }
+      return { ...prev, [topicId]: nextStatus }
     })
+
+    // Immediately persist to server
+    fetch("/api/progress", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topicId, status: nextStatus }),
+    }).catch((err) => console.warn("Failed to sync progress to server:", err))
   }
 
   // Open Notes Modal
@@ -195,11 +230,24 @@ export default function TXLLearningPortal() {
   // Save Note
   const handleSaveNote = () => {
     if (activeModalTopic) {
+      const topicId = activeModalTopic.id
+      const content = noteDraft
       setUserNotes((prev) => ({
         ...prev,
-        [activeModalTopic.id]: noteDraft,
+        [topicId]: content,
       }))
       setActiveModalTopic(null)
+
+      // Immediately persist note to server
+      fetch("/api/progress", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topicId,
+          status: progressState[topicId] || "IN_PROGRESS",
+          note: content,
+        }),
+      }).catch((err) => console.warn("Failed to sync note to server:", err))
     }
   }
 

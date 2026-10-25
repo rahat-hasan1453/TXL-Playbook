@@ -15,7 +15,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className="bg-[#090d16] text-slate-100 antialiased selection:bg-blue-600 selection:text-white"
+        className="bg-[#0a0a0c] text-zinc-100 antialiased selection:bg-zinc-800 selection:text-white min-h-screen"
       >
         {children}
       </body>

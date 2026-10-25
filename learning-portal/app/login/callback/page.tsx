@@ -67,29 +67,29 @@ export default function LoginCallbackPage() {
   }, [router])
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-[#0f172a] border-2 border-slate-700 p-8 rounded-none text-center space-y-6 shadow-2xl">
-        <div className="w-12 h-12 mx-auto rounded-none bg-[#142617] border-2 border-[#67E14B] flex items-center justify-center shadow-lg shadow-lime-500/20">
-          <Sparkles className="w-6 h-6 text-[#67E14B]" />
+    <div className="min-h-screen bg-[#0a0a0c] text-zinc-100 flex items-center justify-center p-4 selection:bg-zinc-800">
+      <div className="max-w-md w-full bg-[#121316] border border-zinc-800/80 p-8 rounded-2xl text-center space-y-6 shadow-2xl">
+        <div className="w-12 h-12 mx-auto rounded-xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center text-blue-400 shadow-sm">
+          <Sparkles className="w-5 h-5" />
         </div>
 
         {processing && (
           <div className="space-y-3">
-            <Loader2 className="w-8 h-8 text-lime-400 animate-spin mx-auto" />
-            <h2 className="text-xl font-bold text-white">Completing Blocks SSO Login...</h2>
-            <p className="text-xs text-slate-400">Exchanging authorization tokens and securing your session.</p>
+            <Loader2 className="w-7 h-7 text-white animate-spin mx-auto" />
+            <h2 className="text-lg font-bold text-white tracking-tight">Completing Blocks SSO Login...</h2>
+            <p className="text-xs text-zinc-400">Exchanging authorization tokens and securing your enterprise session.</p>
           </div>
         )}
 
         {error && (
           <div className="space-y-4">
-            <div className="p-3 bg-red-950/60 border border-red-500/60 text-red-300 text-xs flex items-center gap-2 text-left">
+            <div className="p-3 bg-red-950/60 border border-red-800/50 text-red-300 text-xs rounded-xl flex items-center gap-2 text-left">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
               <span>{error}</span>
             </div>
             <button
               onClick={() => router.push("/login")}
-              className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider border border-slate-600 transition-colors"
+              className="w-full py-2.5 px-4 bg-white hover:bg-zinc-200 text-black font-semibold text-xs rounded-lg transition shadow"
             >
               Back to Login
             </button>

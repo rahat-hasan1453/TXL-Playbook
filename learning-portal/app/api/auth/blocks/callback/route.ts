@@ -36,20 +36,35 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies()
     const maxAge = 60 * 60 * 24 * 7 // 7 days
 
-    cookieStore.set("txl_user_role", "LEARNER", { path: "/", maxAge })
-    cookieStore.set("txl_user_id", "blocks-user-1", { path: "/", maxAge })
-    cookieStore.set("txl_user_email", "blocks.user@selise.ch", { path: "/", maxAge })
-    cookieStore.set("txl_user_name", "SELISE Blocks User", { path: "/", maxAge })
-    cookieStore.set("txl_user_discipline", "Cloud Systems Engineer", { path: "/", maxAge })
-    cookieStore.set("txl_user_avatar", "SB", { path: "/", maxAge })
+    const cbData = callbackResponse as Record<string, unknown> | null
+    const userObj = ((cbData?.user || {}) as Record<string, unknown>)
+    const userEmail = ((userObj.email || cbData?.email || "blocks.user@selise.ch") as string)
+    const userName = ((userObj.name || cbData?.name || "SELISE Blocks User") as string)
+    const roles = Array.isArray(cbData?.roles) ? cbData.roles : Array.isArray(userObj.roles) ? userObj.roles : []
+    const isHead =
+      roles.includes("UNIT_HEAD") ||
+      roles.includes("EDUCATOR") ||
+      userEmail.toLowerCase().includes("lead") ||
+      userEmail.toLowerCase().includes("head") ||
+      userEmail.toLowerCase().includes("educator")
+    const role = isHead ? "UNIT_HEAD" : "LEARNER"
+    const discipline = isHead ? "Leadership & Strategy" : "Cloud Systems Engineer"
+    const avatar = userName.split(" ").map((s) => s[0]).join("").toUpperCase().slice(0, 2) || "SB"
+
+    cookieStore.set("txl_user_role", role, { path: "/", maxAge })
+    cookieStore.set("txl_user_id", ((userObj.id || cbData?.id || "blocks-user-1") as string), { path: "/", maxAge })
+    cookieStore.set("txl_user_email", userEmail, { path: "/", maxAge })
+    cookieStore.set("txl_user_name", userName, { path: "/", maxAge })
+    cookieStore.set("txl_user_discipline", discipline, { path: "/", maxAge })
+    cookieStore.set("txl_user_avatar", avatar, { path: "/", maxAge })
 
     return NextResponse.json({
       ok: true,
       callbackResponse,
       user: {
-        role: "LEARNER",
-        name: "SELISE Blocks User",
-        email: "blocks.user@selise.ch",
+        role,
+        name: userName,
+        email: userEmail,
       },
     })
   } catch (err: unknown) {

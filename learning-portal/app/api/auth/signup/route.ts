@@ -48,8 +48,10 @@ export async function POST(request: NextRequest) {
         .toUpperCase()
         .slice(0, 2) || "TX"
 
+    const resolvedUserId = (blocksResult as { itemId?: string })?.itemId || `user-${Date.now()}`
+
     cookieStore.set("txl_user_role", role, { path: "/", maxAge })
-    cookieStore.set("txl_user_id", `user-${Date.now()}`, { path: "/", maxAge })
+    cookieStore.set("txl_user_id", resolvedUserId, { path: "/", maxAge })
     cookieStore.set("txl_user_email", email, { path: "/", maxAge })
     cookieStore.set("txl_user_name", fullName, { path: "/", maxAge })
     cookieStore.set("txl_user_discipline", discipline, { path: "/", maxAge })
@@ -59,6 +61,7 @@ export async function POST(request: NextRequest) {
       success: true,
       blocksResult,
       user: {
+        id: resolvedUserId,
         email,
         name: fullName,
         role,

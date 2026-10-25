@@ -5,6 +5,7 @@ const memoryStore = {
   progress: new Map<string, { userId: string; topicId: string; status: string; completedAt?: Date | null }>(),
   notes: new Map<string, { userId: string; topicId: string; content: string; updatedAt: Date }>(),
   shared: new Array<{ id: string; userId: string; userName: string; topicId: string; topicTitle: string; content: string; likes: number; createdAt: Date }>(),
+  userRoles: new Map<string, 'LEARNER' | 'UNIT_HEAD'>(),
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

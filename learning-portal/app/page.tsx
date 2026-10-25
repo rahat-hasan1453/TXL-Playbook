@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo, useEffect } from "react"
+import React, { useState, useMemo, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { CURRICULUM_DOMAINS, Domain, Topic } from "@/lib/curriculumData"
 import { UserSession } from "@/lib/auth"
@@ -29,6 +29,7 @@ import {
   Check,
   Heart,
   LogOut,
+  X,
 } from "lucide-react"
 import RolePathwaysView, { ROLE_TRACKS } from "@/components/RolePathwaysView"
 import UnitHeadManagementView from "@/components/UnitHeadManagementView"
@@ -62,21 +63,59 @@ export default function TXLLearningPortal() {
     }
   }
 
-  // Load session from cookie
-  useEffect(() => {
-    fetch("/api/auth/session")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.user) {
-          setCurrentUser(data.user)
-        } else {
-          router.push("/login")
+  const [roleUpgradeNotice, setRoleUpgradeNotice] = useState<string | null>(null)
+
+  // Verify and sync session dynamically (handles real-time role promotion while user is active)
+  const syncSession = useCallback(async (isInitial = false) => {
+    try {
+      const res = await fetch("/api/auth/session")
+      const data = await res.json()
+      if (data?.user) {
+        setCurrentUser((prev) => {
+          if (prev && prev.role !== data.user.role) {
+            if (data.user.role === "UNIT_HEAD") {
+              setRoleUpgradeNotice(
+                "Your account has been upgraded to Unit Head / Educator! Executive Command Center is now active."
+              )
+              setActiveTab("unit-head")
+            }
+          } else if (isInitial && data.user.role === "UNIT_HEAD") {
+            setActiveTab("unit-head")
+          }
+          return data.user
+        })
+
+        if (data.roleUpdated && data.newRole === "UNIT_HEAD") {
+          setRoleUpgradeNotice(
+            "Your account has been upgraded to Unit Head / Educator! Executive Command Center is now active."
+          )
+          setActiveTab("unit-head")
         }
-      })
-      .catch(() => {
+      } else {
         router.push("/login")
-      })
+      }
+    } catch {
+      // Retain offline state on minor network hiccup
+    }
   }, [router])
+
+  useEffect(() => {
+    syncSession(true)
+
+    // Live tab-focus verification (detects when admin promoted user in IAM or another tab)
+    const handleFocus = () => {
+      syncSession(false)
+    }
+    window.addEventListener("focus", handleFocus)
+
+    // Periodic heartbeat check every 45s
+    const interval = setInterval(() => syncSession(false), 45000)
+
+    return () => {
+      window.removeEventListener("focus", handleFocus)
+      clearInterval(interval)
+    }
+  }, [syncSession])
 
   const currentUserRole: "LEARNER" | "UNIT_HEAD" = currentUser?.role || "LEARNER"
 
@@ -223,19 +262,19 @@ export default function TXLLearningPortal() {
               className="flex items-center space-x-3 bg-[#121316] hover:bg-[#16171b] border border-zinc-800/80 hover:border-zinc-700 px-3 py-2 rounded-xl transition text-left shadow-sm cursor-pointer focus:outline-none"
             >
               <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700/60 flex items-center justify-center text-xs font-bold text-zinc-200">
-                {currentUser?.avatar || "MC"}
+                {currentUser?.avatar || (currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : (currentUserRole === "UNIT_HEAD" ? "UH" : "LN"))}
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
                   <p className="font-semibold text-xs text-white leading-tight">
-                    {currentUser?.name || "Mark Casado G"}
+                    {currentUser?.name || (currentUserRole === "UNIT_HEAD" ? "Unit Head" : "Learner")}
                   </p>
                   <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-zinc-800 text-zinc-300 border border-zinc-700/60">
                     {currentUserRole === "UNIT_HEAD" ? "Unit Head" : "Learner"}
                   </span>
                 </div>
                 <p className="text-[11px] text-zinc-400 mt-0.5 font-normal leading-tight">
-                  {currentUser?.discipline || "Product Engineer"}
+                  {currentUser?.discipline || (currentUserRole === "UNIT_HEAD" ? "Leadership & Strategy" : "Active Learner")}
                 </p>
               </div>
             </button>
@@ -246,8 +285,8 @@ export default function TXLLearningPortal() {
                 <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
                 <div className="absolute right-0 mt-2 w-64 bg-[#121316] border border-zinc-800 rounded-xl shadow-2xl p-1.5 z-50 text-xs">
                   <div className="px-3 py-2 border-b border-zinc-800/80 mb-1">
-                    <p className="font-semibold text-white truncate">{currentUser?.name || "Mark Casado G"}</p>
-                    <p className="text-[11px] text-zinc-400 truncate">{currentUser?.email || "mark.casado@txl.is"}</p>
+                    <p className="font-semibold text-white truncate">{currentUser?.name || "Active Session"}</p>
+                    <p className="text-[11px] text-zinc-400 truncate">{currentUser?.email || ""}</p>
                   </div>
 
                   <button
@@ -323,20 +362,70 @@ export default function TXLLearningPortal() {
         </div>
       </header>
 
+      {/* Live Role Upgrade Alert Banner */}
+      {roleUpgradeNotice && (
+        <div className="bg-gradient-to-r from-purple-950/90 via-blue-950/90 to-purple-950/90 border-b border-purple-700/60 py-3 px-4 z-30 shadow-lg">
+          <div className="max-w-[1536px] mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-purple-200">
+            <div className="flex items-center gap-2.5">
+              <span className="p-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0">
+                <ShieldAlert className="w-4 h-4 text-purple-400" />
+              </span>
+              <span className="font-semibold text-white">{roleUpgradeNotice}</span>
+            </div>
+            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+              <button
+                onClick={() => {
+                  setActiveTab("unit-head")
+                  setRoleUpgradeNotice(null)
+                }}
+                className="px-3 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-black font-bold text-xs transition shadow flex items-center gap-1.5"
+              >
+                <span>Enter Command Center</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setRoleUpgradeNotice(null)}
+                className="p-1.5 rounded-lg text-purple-300 hover:text-white hover:bg-purple-900/40 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Area */}
       <main className="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         {/* ================= PRIMARY VIEW: WHAT TO LEARN (ROLE TRACKS) ================= */}
         {activeTab === "what-to-learn" && (
-          <RolePathwaysView
-            progressState={progressState}
-            onToggleStatus={handleToggleStatus}
-            userNotes={userNotes}
-            onOpenNotes={handleOpenNotes}
-            onOpenShare={handleOpenShare}
-            activeRoleKey={selectedRoleTrack}
-            onRoleChange={setSelectedRoleTrack}
-            domains={domains}
-          />
+          <div className="space-y-4">
+            {currentUserRole === "UNIT_HEAD" && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-[#121316] border border-zinc-800 rounded-xl px-4 py-2.5 shadow-sm gap-2">
+                <div className="flex items-center gap-2 text-xs text-zinc-300">
+                  <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+                  <span>Viewing curriculum in preview mode. Your primary workspace is the <strong>Executive Command Center</strong>.</span>
+                </div>
+                <button
+                  onClick={() => setActiveTab("unit-head")}
+                  className="px-3 py-1 rounded-lg text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700/60 transition flex items-center gap-1.5 self-start sm:self-auto"
+                >
+                  <span>Return to Unit Head Homepage</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            <RolePathwaysView
+              progressState={progressState}
+              onToggleStatus={handleToggleStatus}
+              userNotes={userNotes}
+              onOpenNotes={handleOpenNotes}
+              onOpenShare={handleOpenShare}
+              activeRoleKey={selectedRoleTrack}
+              onRoleChange={setSelectedRoleTrack}
+              domains={domains}
+            />
+          </div>
         )}
 
         {/* ================= VIEW 2: MY NOTES ================= */}
@@ -524,23 +613,14 @@ export default function TXLLearningPortal() {
 
         {/* ================= VIEW 4: UNIT HEAD OVERVIEW & MODULE MANAGEMENT ================= */}
         {activeTab === "unit-head" && currentUserRole === "UNIT_HEAD" && (
-          <div className="space-y-4">
-            <button
-              onClick={() => setActiveTab("what-to-learn")}
-              className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition w-fit"
-            >
-              <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-              <span>Back to Curriculum (What to Learn)</span>
-            </button>
-
-            <UnitHeadManagementView
-              domains={domains}
-              onUpdateDomains={handleUpdateDomains}
-              currentUser={currentUser}
-              currentLearnerProgress={progressState}
-              currentLearnerNotes={userNotes}
-            />
-          </div>
+          <UnitHeadManagementView
+            domains={domains}
+            onUpdateDomains={handleUpdateDomains}
+            currentUser={currentUser}
+            currentLearnerProgress={progressState}
+            currentLearnerNotes={userNotes}
+            onNavigateToCurriculum={() => setActiveTab("what-to-learn")}
+          />
         )}
       </main>
 

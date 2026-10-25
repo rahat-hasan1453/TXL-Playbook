@@ -14,21 +14,20 @@ import {
   Pencil,
   Trash2,
   Search,
-  Filter,
   CheckCircle2,
   Clock,
   Circle,
   FileText,
-  UserCheck,
   ChevronRight,
   ChevronDown,
   X,
   AlertTriangle,
   GraduationCap,
-  Sparkles,
-  Layers,
   ArrowRight,
-  Check
+  Trophy,
+  Target,
+  Sparkles,
+  Layers
 } from "lucide-react"
 
 export interface PodLearner {
@@ -47,6 +46,7 @@ interface UnitHeadManagementViewProps {
   currentUser: UserSession | null
   currentLearnerProgress: Record<string, "COMPLETED" | "IN_PROGRESS">
   currentLearnerNotes: Record<string, string>
+  onNavigateToCurriculum?: () => void
 }
 
 export default function UnitHeadManagementView({
@@ -55,142 +55,228 @@ export default function UnitHeadManagementView({
   currentUser,
   currentLearnerProgress,
   currentLearnerNotes,
+  onNavigateToCurriculum,
 }: UnitHeadManagementViewProps) {
-  // Unit Head Sub-view
+  // Main Sub-tabs: Leaderboard & Audits vs Curriculum Manager
   const [activeSubTab, setActiveSubTab] = useState<"audits" | "curriculum">("audits")
 
-  // ==================== LEARNER ROSTER STATE ====================
-  // Seed realistic cross-pod members while integrating the real signed-in session
-  const [podMembers, setPodMembers] = useState<PodLearner[]>(() => {
-    // Collect all topic IDs to seed sample progress
-    const allTopics = domains.flatMap((d) => d.topics)
-    const getSampleProgress = (countCompleted: number, countInProg: number) => {
-      const prog: Record<string, "COMPLETED" | "IN_PROGRESS"> = {}
-      allTopics.slice(0, countCompleted).forEach((t) => {
-        prog[t.id] = "COMPLETED"
-      })
-      allTopics.slice(countCompleted, countCompleted + countInProg).forEach((t) => {
-        prog[t.id] = "IN_PROGRESS"
-      })
-      return prog
-    }
+  // View mode in the Audits tab: "ALL_LEARNERS" (Org-Wide Module % Adoption) vs "INDIVIDUAL_AUDIT"
+  const [auditViewMode, setAuditViewMode] = useState<"ALL_LEARNERS" | "INDIVIDUAL_AUDIT">("ALL_LEARNERS")
 
-    return [
-      {
-        id: "member-current",
-        name: currentUser?.name || "Active Session (You)",
-        role: currentUser?.discipline || "Learner / Lead",
-        email: currentUser?.email || "user@seliseblocks.com",
-        avatar: (currentUser?.name?.slice(0, 2) || "ME").toUpperCase(),
-        progress: currentLearnerProgress,
-        notes: currentLearnerNotes,
-      },
-      {
-        id: "member-1",
-        name: "Tahmid Chowdhury",
-        role: "AI Product Manager",
-        email: "tahmid.c@txl.is",
-        avatar: "TC",
-        progress: getSampleProgress(24, 8),
-        notes: {
-          "biz-1": "Applied Business Model Canvas for the FinTech MVP engagement. Validated cost structure vs value capture.",
-          "spec-1": "Drafted spec with strict user constraints before letting subagents scaffold routes.",
-        },
-      },
-      {
-        id: "member-2",
-        name: "Ayesha Rahman",
-        role: "Service Designer",
-        email: "ayesha.r@txl.is",
-        avatar: "AR",
-        progress: getSampleProgress(32, 5),
-        notes: {
-          "biz-2": "Mapped customer journey touchpoints across cross-border payment flows.",
-        },
-      },
-      {
-        id: "member-3",
-        name: "Zubair Al-Mamun",
-        role: "Product Engineer",
-        email: "zubair.m@txl.is",
-        avatar: "ZM",
-        progress: getSampleProgress(41, 12),
-        notes: {
-          "eng-1": "Configured Next.js App Router with streaming SSR and optimistic updates.",
-          "eng-3": "Hardened API endpoints against prompt injections using schema validation.",
-        },
-      },
-      {
-        id: "member-4",
-        name: "Tanvir Hasan",
-        role: "Product Consultant",
-        email: "tanvir.h@txl.is",
-        avatar: "TH",
-        progress: getSampleProgress(18, 4),
-        notes: {
-          "biz-4": "Reviewed unit economics for SaaS enterprise pricing tier.",
-        },
-      },
-    ]
-  })
-
-  // Synchronize current member with live session progress
-  const activePodMembers = useMemo(() => {
-    return podMembers.map((m) => {
-      if (m.id === "member-current") {
-        return {
-          ...m,
-          name: currentUser?.name || "Active Session (You)",
-          role: currentUser?.discipline || "Learner / Lead",
-          email: currentUser?.email || "user@seliseblocks.com",
-          avatar: (currentUser?.name?.slice(0, 2) || "ME").toUpperCase(),
-          progress: currentLearnerProgress,
-          notes: currentLearnerNotes,
+  // ==================== LEARNER ROSTER & LEADERBOARD ====================
+  // Clean dynamic cross-pod learners (persisted in localStorage, zero hardcoded dummy data)
+  const [podLearners, setPodLearners] = useState<PodLearner[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("txl_pod_learners")
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch (e) {
+          console.error("Failed to parse saved pod learners", e)
         }
       }
-      return m
-    })
-  }, [podMembers, currentUser, currentLearnerProgress, currentLearnerNotes])
+    }
+    return []
+  })
 
-  const [selectedMemberId, setSelectedMemberId] = useState<string>("member-current")
-  const currentMember = useMemo(() => {
-    return activePodMembers.find((m) => m.id === selectedMemberId) || activePodMembers[0]
-  }, [activePodMembers, selectedMemberId])
-
-  // Filters for Learner Module Progress Audit
-  const [auditStatusFilter, setAuditStatusFilter] = useState<"ALL" | "COMPLETED" | "IN_PROGRESS" | "NOT_STARTED">("ALL")
-  const [auditDomainFilter, setAuditDomainFilter] = useState<string>("ALL")
-  const [auditSearchQuery, setAuditSearchQuery] = useState("")
-
-  // Toggle member's progress from Unit Head audit view
-  const handleToggleMemberTopic = (topicId: string) => {
-    setPodMembers((prev) =>
-      prev.map((m) => {
-        if (m.id !== selectedMemberId) return m
-        const current = m.progress[topicId]
-        const updatedProgress = { ...m.progress }
-        if (current === "COMPLETED") {
-          delete updatedProgress[topicId]
-        } else if (current === "IN_PROGRESS") {
-          updatedProgress[topicId] = "COMPLETED"
-        } else {
-          updatedProgress[topicId] = "IN_PROGRESS"
-        }
-        return { ...m, progress: updatedProgress }
-      })
-    )
+  // Persist podLearners whenever modified
+  const handleUpdatePodLearners = (updated: PodLearner[]) => {
+    setPodLearners(updated)
+    if (typeof window !== "undefined") {
+      localStorage.setItem("txl_pod_learners", JSON.stringify(updated))
+    }
   }
 
-  // ==================== CURRICULUM MANAGEMENT STATE ====================
+  // Modal to dynamically enroll/add a new real learner
+  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false)
+  const [enrollName, setEnrollName] = useState("")
+  const [enrollEmail, setEnrollEmail] = useState("")
+  const [enrollRole, setEnrollRole] = useState("Product Engineer")
+
+  const handleEnrollLearner = () => {
+    if (!enrollName.trim() || !enrollEmail.trim()) return
+    const initials = enrollName
+      .trim()
+      .split(" ")
+      .map((s) => s[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "LN"
+
+    const newLearner: PodLearner = {
+      id: `learner-${Date.now()}`,
+      name: enrollName.trim(),
+      email: enrollEmail.trim(),
+      role: enrollRole,
+      avatar: initials,
+      progress: {},
+      notes: {},
+    }
+
+    const next = [...podLearners, newLearner]
+    handleUpdatePodLearners(next)
+    setEnrollName("")
+    setEnrollEmail("")
+    setIsEnrollModalOpen(false)
+  }
+
+  const handleRemoveLearner = (learnerId: string) => {
+    const next = podLearners.filter((l) => l.id !== learnerId)
+    handleUpdatePodLearners(next)
+    if (selectedLearnerId === learnerId) {
+      setSelectedLearnerId("")
+      setAuditViewMode("ALL_LEARNERS")
+    }
+  }
+
+  // Total topics in curriculum
+  const totalTopicsCount = useMemo(() => {
+    return domains.reduce((acc, d) => acc + d.topics.length, 0)
+  }, [domains])
+
+  // Ranked Leaderboard: sorted strictly descending by completion percentage
+  const rankedLeaderboard = useMemo(() => {
+    return podLearners
+      .map((learner) => {
+        const completed = Object.values(learner.progress).filter((v) => v === "COMPLETED").length
+        const inProgress = Object.values(learner.progress).filter((v) => v === "IN_PROGRESS").length
+        const percentage = totalTopicsCount ? Math.round((completed / totalTopicsCount) * 100) : 0
+        return {
+          ...learner,
+          completed,
+          inProgress,
+          percentage,
+        }
+      })
+      .sort((a, b) => b.percentage - a.percentage || b.completed - a.completed)
+  }, [podLearners, totalTopicsCount])
+
+  // Selected learner for individual audit drilldown
+  const [selectedLearnerId, setSelectedLearnerId] = useState<string>(rankedLeaderboard[0]?.id || "")
+  const currentLearner = useMemo(() => {
+    return rankedLeaderboard.find((l) => l.id === selectedLearnerId) || rankedLeaderboard[0] || null
+  }, [rankedLeaderboard, selectedLearnerId])
+
+  // Aggregate Org-Wide Completion percentage
+  const aggregateOrgCompletion = useMemo(() => {
+    if (rankedLeaderboard.length === 0 || totalTopicsCount === 0) return 0
+    const totalCompletions = rankedLeaderboard.reduce((acc, l) => acc + l.completed, 0)
+    const maxPossible = rankedLeaderboard.length * totalTopicsCount
+    return Math.round((totalCompletions / maxPossible) * 100)
+  }, [rankedLeaderboard, totalTopicsCount])
+
+  // ==================== SECTION 2: ORG-WIDE MODULE ADOPTION MATRIX ====================
+  // Computes for every module in curriculum: how many total learners finished it, in-progress, and what % of all learners
+  const [adoptionFilter, setAdoptionFilter] = useState<"ALL" | "HIGH" | "IN_PROGRESS" | "DEFICIT">("ALL")
+  const [orgDomainFilter, setOrgDomainFilter] = useState<string>("ALL")
+  const [orgSearchQuery, setOrgSearchQuery] = useState("")
+  const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null)
+
+  // Compute all module adoption stats
+  const allModulesAdoption = useMemo(() => {
+    const list: Array<{
+      topic: Topic
+      domain: Domain
+      completedLearners: PodLearner[]
+      inProgressLearners: PodLearner[]
+      notStartedLearners: PodLearner[]
+      adoptionPercentage: number
+      totalLearnersCount: number
+    }> = []
+
+    const totalLearners = rankedLeaderboard.length
+
+    domains.forEach((domain) => {
+      if (orgDomainFilter !== "ALL" && domain.id !== orgDomainFilter) return
+
+      domain.topics.forEach((topic) => {
+        const completedLearners: PodLearner[] = []
+        const inProgressLearners: PodLearner[] = []
+        const notStartedLearners: PodLearner[] = []
+
+        rankedLeaderboard.forEach((learner) => {
+          const st = learner.progress[topic.id]
+          if (st === "COMPLETED") {
+            completedLearners.push(learner)
+          } else if (st === "IN_PROGRESS") {
+            inProgressLearners.push(learner)
+          } else {
+            notStartedLearners.push(learner)
+          }
+        })
+
+        const adoptionPercentage = totalLearners ? Math.round((completedLearners.length / totalLearners) * 100) : 0
+
+        // Adoption Filter
+        if (adoptionFilter === "HIGH" && adoptionPercentage < 50) return
+        if (adoptionFilter === "IN_PROGRESS" && (adoptionPercentage === 0 || adoptionPercentage >= 50)) return
+        if (adoptionFilter === "DEFICIT" && adoptionPercentage > 0) return
+
+        // Search Query
+        if (orgSearchQuery.trim()) {
+          const q = orgSearchQuery.toLowerCase()
+          const matches =
+            topic.title.toLowerCase().includes(q) ||
+            topic.description.toLowerCase().includes(q) ||
+            domain.name.toLowerCase().includes(q) ||
+            topic.roles.some((r) => r.toLowerCase().includes(q))
+          if (!matches) return
+        }
+
+        list.push({
+          topic,
+          domain,
+          completedLearners,
+          inProgressLearners,
+          notStartedLearners,
+          adoptionPercentage,
+          totalLearnersCount: totalLearners,
+        })
+      })
+    })
+
+    // Sort modules by adoption percentage high to low (highest % first)
+    list.sort((a, b) => {
+      if (b.adoptionPercentage !== a.adoptionPercentage) {
+        return b.adoptionPercentage - a.adoptionPercentage
+      }
+      if (b.completedLearners.length !== a.completedLearners.length) {
+        return b.completedLearners.length - a.completedLearners.length
+      }
+      if (b.inProgressLearners.length !== a.inProgressLearners.length) {
+        return b.inProgressLearners.length - a.inProgressLearners.length
+      }
+      return a.topic.title.localeCompare(b.topic.title)
+    })
+
+    return list
+  }, [domains, rankedLeaderboard, orgDomainFilter, adoptionFilter, orgSearchQuery])
+
+  // Toggle learner progress on a module directly from the breakdown
+  const handleToggleLearnerTopic = (learnerId: string, topicId: string) => {
+    const next = podLearners.map((l) => {
+      if (l.id !== learnerId) return l
+      const current = l.progress[topicId]
+      const updatedProgress = { ...l.progress }
+      if (current === "COMPLETED") {
+        delete updatedProgress[topicId]
+      } else if (current === "IN_PROGRESS") {
+        updatedProgress[topicId] = "COMPLETED"
+      } else {
+        updatedProgress[topicId] = "IN_PROGRESS"
+      }
+      return { ...l, progress: updatedProgress }
+    })
+    handleUpdatePodLearners(next)
+  }
+
+  // ==================== CURRICULUM MANAGEMENT CRUD STATE ====================
   const [moduleSearchQuery, setModuleSearchQuery] = useState("")
   const [moduleDomainFilter, setModuleDomainFilter] = useState<string>("ALL")
-
-  // Modals
   const [isAddModuleModalOpen, setIsAddModuleModalOpen] = useState(false)
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null)
   const [deletingTopic, setDeletingTopic] = useState<{ topic: Topic; domainId: string } | null>(null)
 
-  // Add/Edit Form State
   const [formDomainId, setFormDomainId] = useState(domains[0]?.id || "")
   const [formTitle, setFormTitle] = useState("")
   const [formDescription, setFormDescription] = useState("")
@@ -228,7 +314,6 @@ export default function UnitHeadManagementView({
     })
   }
 
-  // Save new module
   const handleSaveNewModule = () => {
     if (!formTitle.trim() || !formDescription.trim()) return
 
@@ -254,7 +339,6 @@ export default function UnitHeadManagementView({
     setIsAddModuleModalOpen(false)
   }
 
-  // Save edited module
   const handleSaveEditModule = () => {
     if (!editingTopic || !formTitle.trim()) return
 
@@ -267,7 +351,6 @@ export default function UnitHeadManagementView({
     }
 
     const updatedDomains = domains.map((domain) => {
-      // Remove topic if domain changed
       const topicsWithout = domain.topics.filter((t) => t.id !== editingTopic.id)
       if (domain.id === formDomainId) {
         return {
@@ -285,7 +368,6 @@ export default function UnitHeadManagementView({
     setEditingTopic(null)
   }
 
-  // Confirm delete module
   const handleConfirmDeleteModule = () => {
     if (!deletingTopic) return
 
@@ -303,52 +385,6 @@ export default function UnitHeadManagementView({
     setDeletingTopic(null)
   }
 
-  // Metrics
-  const totalTopicsCount = useMemo(() => {
-    return domains.reduce((acc, d) => acc + d.topics.length, 0)
-  }, [domains])
-
-  const aggregateOrgCompletion = useMemo(() => {
-    if (activePodMembers.length === 0 || totalTopicsCount === 0) return 0
-    const totalCompletions = activePodMembers.reduce((acc, m) => {
-      const completed = Object.values(m.progress).filter((v) => v === "COMPLETED").length
-      return acc + completed
-    }, 0)
-    const maxPossible = activePodMembers.length * totalTopicsCount
-    return Math.round((totalCompletions / maxPossible) * 100)
-  }, [activePodMembers, totalTopicsCount])
-
-  // Filtered topics for the selected member in Audit Tab
-  const memberAuditTopics = useMemo(() => {
-    if (!currentMember) return []
-    const list: Array<{ topic: Topic; domain: Domain; status: "COMPLETED" | "IN_PROGRESS" | "NOT_STARTED"; note?: string }> = []
-
-    domains.forEach((domain) => {
-      if (auditDomainFilter !== "ALL" && domain.id !== auditDomainFilter) return
-
-      domain.topics.forEach((topic) => {
-        const status = currentMember.progress[topic.id] || "NOT_STARTED"
-        const note = currentMember.notes[topic.id]
-
-        if (auditStatusFilter !== "ALL" && status !== auditStatusFilter) return
-
-        if (auditSearchQuery.trim()) {
-          const q = auditSearchQuery.toLowerCase()
-          const matches =
-            topic.title.toLowerCase().includes(q) ||
-            topic.description.toLowerCase().includes(q) ||
-            domain.name.toLowerCase().includes(q)
-          if (!matches) return
-        }
-
-        list.push({ topic, domain, status, note })
-      })
-    })
-
-    return list
-  }, [domains, currentMember, auditDomainFilter, auditStatusFilter, auditSearchQuery])
-
-  // Filtered topics for Curriculum Manager Tab
   const curriculumManagerDomains = useMemo(() => {
     return domains.map((domain) => {
       if (moduleDomainFilter !== "ALL" && domain.id !== moduleDomainFilter) {
@@ -370,7 +406,18 @@ export default function UnitHeadManagementView({
   }, [domains, moduleDomainFilter, moduleSearchQuery])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Back to Curriculum Nav Link (Screenshot Specification) */}
+      {onNavigateToCurriculum && (
+        <button
+          onClick={onNavigateToCurriculum}
+          className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition group py-0.5"
+        >
+          <span className="text-zinc-500 group-hover:-translate-x-0.5 transition-transform font-mono">←</span>
+          <span>Back to Curriculum (What to Learn)</span>
+        </button>
+      )}
+
       {/* ================= HEADER & SUB-TABS ================= */}
       <div className="bg-[#121316] p-6 sm:p-7 rounded-2xl border border-zinc-800/80 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -383,8 +430,8 @@ export default function UnitHeadManagementView({
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
               TXL Organizational Capability & Curriculum Management
             </h1>
-            <p className="text-sm text-zinc-400 mt-1 max-w-2xl">
-              Audit granular learner progress across pods, inspect topic-by-topic completions, or author and manage all curriculum modules.
+            <p className="text-sm text-zinc-400 mt-1 max-w-2xl font-normal">
+              Executive overview of pod competency adoption, team leaderboard rankings, and curriculum authoring.
             </p>
           </div>
 
@@ -399,7 +446,7 @@ export default function UnitHeadManagementView({
               }`}
             >
               <Users className="w-4 h-4 text-blue-400" />
-              <span>Learner Audits & Progress</span>
+              <span>Leaderboard & Module Adoption</span>
             </button>
             <button
               onClick={() => setActiveSubTab("curriculum")}
@@ -417,7 +464,7 @@ export default function UnitHeadManagementView({
       </div>
 
       {/* ========================================================================= */}
-      {/* SUB-VIEW 1: LEARNER AUDITS & PROGRESS ("k kon modules er ki ki sesh koreche") */}
+      {/* SUB-VIEW 1: LEADERBOARD & ORG-WIDE MODULE ADOPTION MATRIX                 */}
       {/* ========================================================================= */}
       {activeSubTab === "audits" && (
         <div className="space-y-6">
@@ -428,8 +475,8 @@ export default function UnitHeadManagementView({
                 <span>Active Pod Learners</span>
                 <Users className="w-4 h-4 text-blue-400" />
               </div>
-              <p className="text-2xl font-bold text-white mt-2">{activePodMembers.length} Members</p>
-              <p className="text-xs text-zinc-500 mt-1">Cross-pod engineering & product staff</p>
+              <p className="text-2xl font-bold text-white mt-2">{rankedLeaderboard.length} Learners</p>
+              <p className="text-xs text-zinc-500 mt-1">Cross-pod engineering & design staff</p>
             </div>
 
             <div className="bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm">
@@ -438,7 +485,7 @@ export default function UnitHeadManagementView({
                 <TrendingUp className="w-4 h-4 text-emerald-400" />
               </div>
               <p className="text-2xl font-bold text-emerald-400 mt-2">{aggregateOrgCompletion}%</p>
-              <p className="text-xs text-zinc-500 mt-1">Total verified competency readiness</p>
+              <p className="text-xs text-zinc-500 mt-1">Total collective readiness score</p>
             </div>
 
             <div className="bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm">
@@ -452,278 +499,510 @@ export default function UnitHeadManagementView({
 
             <div className="bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm">
               <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-                <span>Leadership Oversight</span>
-                <Award className="w-4 h-4 text-purple-400" />
+                <span>Top Ranked Learner</span>
+                <Trophy className="w-4 h-4 text-amber-400" />
               </div>
-              <p className="text-2xl font-bold text-white mt-2">Active</p>
-              <p className="text-xs text-zinc-500 mt-1">Real-time status sign-off enabled</p>
+              <p className="text-xl font-bold text-white mt-2 truncate">
+                {rankedLeaderboard[0]?.name || "—"}
+              </p>
+              <p className={`text-xs font-semibold mt-1 ${rankedLeaderboard[0] ? "text-emerald-400" : "text-zinc-500"}`}>
+                {rankedLeaderboard[0] ? `${rankedLeaderboard[0].percentage}% Readiness` : "No learners registered"}
+              </p>
             </div>
           </div>
 
           {/* Master-Detail Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left Column: Pod Member Roster (4 cols) */}
-            <div className="lg:col-span-4 bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm space-y-3">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-white">Pod Member Roster</h3>
-                <span className="text-[11px] text-zinc-400 font-normal">Select to audit</span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* ========================================================================= */}
+            {/* 1. LEFT PANEL: POD LEADERBOARD (Annotated 1)                              */}
+            {/* ========================================================================= */}
+            <div className="lg:col-span-4 bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm space-y-3.5 lg:sticky lg:top-24 self-start">
+              <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                    <Trophy className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white tracking-tight">Pod Leaderboard</h3>
+                    <p className="text-[11px] text-zinc-400 font-normal">Ranked by verified readiness</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setIsEnrollModalOpen(true)}
+                    className="text-[11px] px-2 py-1 rounded-md font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/60 transition flex items-center gap-1"
+                    title="Add a real team member to pod"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add Learner</span>
+                  </button>
+
+                  <button
+                    onClick={() => setAuditViewMode("ALL_LEARNERS")}
+                    className={`text-[11px] px-2.5 py-1 rounded-md font-semibold transition ${
+                      auditViewMode === "ALL_LEARNERS"
+                        ? "bg-blue-950 text-blue-300 border border-blue-800/60"
+                        : "bg-zinc-800/80 text-zinc-400 hover:text-white border border-zinc-700/50"
+                    }`}
+                    title="View aggregate completion % across all learners"
+                  >
+                    All Learners %
+                  </button>
+                </div>
               </div>
 
+              {/* Leaderboard Ranks */}
               <div className="space-y-2">
-                {activePodMembers.map((member) => {
-                  const memberCompleted = Object.values(member.progress).filter((v) => v === "COMPLETED").length
-                  const memberInProg = Object.values(member.progress).filter((v) => v === "IN_PROGRESS").length
-                  const memberPct = totalTopicsCount ? Math.round((memberCompleted / totalTopicsCount) * 100) : 0
-                  const isSelected = selectedMemberId === member.id
+                {rankedLeaderboard.length === 0 ? (
+                  <div className="p-8 text-center border border-dashed border-zinc-800 rounded-xl bg-[#0a0a0c]/60 space-y-2">
+                    <Users className="w-8 h-8 text-zinc-600 mx-auto" />
+                    <p className="text-xs font-semibold text-zinc-300">No Learners in Pod Yet</p>
+                    <p className="text-[11px] text-zinc-500 max-w-[220px] mx-auto leading-relaxed">
+                      Click &quot;+ Add Learner&quot; above to enroll pod members or let team members sign up via Blocks IAM.
+                    </p>
+                  </div>
+                ) : (
+                  rankedLeaderboard.map((learner, idx) => {
+                  const rank = idx + 1
+                  const isSelected = auditViewMode === "INDIVIDUAL_AUDIT" && selectedLearnerId === learner.id
 
                   return (
                     <button
-                      key={member.id}
-                      onClick={() => setSelectedMemberId(member.id)}
-                      className={`w-full p-3 rounded-lg border text-left transition flex items-center justify-between ${
+                      key={learner.id}
+                      onClick={() => {
+                        setSelectedLearnerId(learner.id)
+                        setAuditViewMode("INDIVIDUAL_AUDIT")
+                      }}
+                      className={`w-full p-3 rounded-lg border text-left transition flex items-center justify-between group ${
                         isSelected
-                          ? "bg-zinc-800/90 border-blue-500/80 shadow-sm"
-                          : "bg-[#0e0f12] border-zinc-800 hover:border-zinc-700"
+                          ? "bg-[#181a20] border-zinc-400 text-white shadow-sm ring-1 ring-zinc-400/30"
+                          : "bg-[#0e0f12] border-zinc-800/90 hover:border-zinc-700 hover:bg-[#14151a]"
                       }`}
                     >
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold border ${
+                      <div className="flex items-center space-x-3 min-w-0">
+                        {/* Rank Badge */}
+                        <div className="shrink-0 flex items-center justify-center w-6 text-xs font-black">
+                          {rank === 1 ? (
+                            <span className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-xs">
+                              1
+                            </span>
+                          ) : rank === 2 ? (
+                            <span className="w-6 h-6 rounded-full bg-zinc-400/20 text-zinc-300 border border-zinc-400/40 flex items-center justify-center text-xs">
+                              2
+                            </span>
+                          ) : rank === 3 ? (
+                            <span className="w-6 h-6 rounded-full bg-amber-800/20 text-amber-500 border border-amber-800/40 flex items-center justify-center text-xs">
+                              3
+                            </span>
+                          ) : (
+                            <span className="text-zinc-500 font-mono text-xs">#{rank}</span>
+                          )}
+                        </div>
+
+                        {/* Avatar */}
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 ${
                           isSelected
                             ? "bg-blue-600 border-blue-400 text-white"
-                            : "bg-zinc-800 border-zinc-700 text-zinc-200"
+                            : "bg-zinc-800 border-zinc-700 text-zinc-300"
                         }`}>
-                          {member.avatar}
+                          {learner.avatar}
                         </div>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-xs font-semibold text-white">{member.name}</p>
-                            {member.id === "member-current" && (
-                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-950 text-blue-300 border border-blue-800/50">
-                                You
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-zinc-400 font-normal">{member.role}</p>
+
+                        {/* Name & Role */}
+                        <div className="min-w-0">
+                          <p className={`text-xs font-semibold truncate ${isSelected ? "text-white" : "text-zinc-200"}`}>
+                            {learner.name}
+                          </p>
+                          <p className="text-[11px] text-zinc-400 font-normal truncate">
+                            {learner.role}
+                          </p>
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <span className="text-xs font-bold text-emerald-400">{memberPct}%</span>
-                        <p className="text-[9px] text-zinc-500">
-                          {memberCompleted}/{totalTopicsCount}
+                      {/* Percentage & Count */}
+                      <div className="text-right shrink-0 ml-2">
+                        <span className="text-xs font-bold text-emerald-400">{learner.percentage}%</span>
+                        <p className="text-[10px] text-zinc-500">
+                          {learner.completed}/{totalTopicsCount}
                         </p>
                       </div>
                     </button>
                   )
-                })}
+                }))}
+              </div>
+
+              {/* Note for Unit Head */}
+              <div className="p-3 bg-[#0a0a0c] border border-zinc-800 rounded-lg text-xs text-zinc-400">
+                <span className="text-zinc-300 font-semibold block mb-0.5">Executive View:</span>
+                Unit Head does not study modules. Click any learner to inspect their personal notes, or click "All Learners %" to view collective adoption.
               </div>
             </div>
 
-            {/* Right Column: Granular Module Audit Details (8 cols) */}
+            {/* ========================================================================= */}
+            {/* 2. RIGHT PANEL: ORG-WIDE MODULE ADOPTION MATRIX (Annotated 2)              */}
+            {/* ========================================================================= */}
             <div className="lg:col-span-8 bg-[#121316] p-6 rounded-xl border border-zinc-800/80 shadow-sm space-y-6">
-              {/* Member Profile Summary Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800 pb-5 gap-4">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-base font-bold text-white shadow-md">
-                    {currentMember.avatar}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-bold text-white">{currentMember.name}</h2>
-                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700/60 font-medium">
-                        {currentMember.role}
-                      </span>
-                    </div>
-                    <p className="text-xs text-zinc-400 mt-0.5">{currentMember.email}</p>
-                  </div>
-                </div>
-
-                {/* Progress pill & metrics */}
-                {(() => {
-                  const comp = Object.values(currentMember.progress).filter((v) => v === "COMPLETED").length
-                  const inProg = Object.values(currentMember.progress).filter((v) => v === "IN_PROGRESS").length
-                  const notStarted = totalTopicsCount - comp - inProg
-                  const pct = totalTopicsCount ? Math.round((comp / totalTopicsCount) * 100) : 0
-
-                  return (
-                    <div className="flex items-center gap-4 text-xs">
-                      <div className="text-right">
-                        <span className="text-xl font-bold text-emerald-400">{pct}%</span>
-                        <p className="text-[10px] text-zinc-500">Readiness Score</p>
-                      </div>
-                      <div className="h-8 w-px bg-zinc-800" />
+              {auditViewMode === "ALL_LEARNERS" ? (
+                <>
+                  {/* Executive Header for All Learners Collective Adoption */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800 pb-5 gap-4">
+                    <div>
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-800/40 text-[11px] font-medium">
-                          {comp} Completed
-                        </span>
-                        <span className="px-2 py-1 rounded bg-blue-950/40 text-blue-300 border border-blue-800/40 text-[11px] font-medium">
-                          {inProg} In Progress
-                        </span>
-                        <span className="px-2 py-1 rounded bg-zinc-800/60 text-zinc-400 border border-zinc-700/40 text-[11px] font-medium">
-                          {notStarted} Remaining
+                        <h2 className="text-lg font-bold text-white tracking-tight">
+                          Organizational Competency Adoption
+                        </h2>
+                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-950/60 text-blue-300 border border-blue-800/50 font-medium">
+                          All {rankedLeaderboard.length} Learners Combined
                         </span>
                       </div>
+                      <p className="text-xs text-zinc-400 mt-1">
+                        Tracking which modules the pod has mastered, which are in adoption, and organizational training deficits.
+                      </p>
                     </div>
-                  )
-                })()}
-              </div>
 
-              {/* Module Filter & Search Toolbar */}
-              <div className="space-y-3">
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                  {/* Status Tabs */}
-                  <div className="flex items-center gap-1 bg-[#0a0a0c] p-1 rounded-lg border border-zinc-800 text-xs">
-                    {(["ALL", "COMPLETED", "IN_PROGRESS", "NOT_STARTED"] as const).map((st) => (
-                      <button
-                        key={st}
-                        onClick={() => setAuditStatusFilter(st)}
-                        className={`px-3 py-1.5 rounded-md font-medium transition ${
-                          auditStatusFilter === st
-                            ? "bg-zinc-800 text-white shadow-sm"
-                            : "text-zinc-400 hover:text-zinc-200"
-                        }`}
-                      >
-                        {st === "ALL" && "All Modules"}
-                        {st === "COMPLETED" && "Completed"}
-                        {st === "IN_PROGRESS" && "In Progress"}
-                        {st === "NOT_STARTED" && "Not Started"}
-                      </button>
-                    ))}
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="text-right">
+                        <span className="text-2xl font-black text-emerald-400">{aggregateOrgCompletion}%</span>
+                        <p className="text-[10px] text-zinc-500">Avg Org Readiness</p>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Domain dropdown filter */}
-                  <select
-                    value={auditDomainFilter}
-                    onChange={(e) => setAuditDomainFilter(e.target.value)}
-                    className="bg-[#0a0a0c] border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-blue-500 font-medium"
-                  >
-                    <option value="ALL">All Domains ({domains.length})</option>
-                    {domains.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.code} · {d.name} ({d.topics.length})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  {/* Filter & Search Toolbar */}
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                      {/* Adoption Filter Tabs */}
+                      <div className="flex items-center gap-1 bg-[#0a0a0c] p-1 rounded-lg border border-zinc-800 text-xs">
+                        {(["ALL", "HIGH", "IN_PROGRESS", "DEFICIT"] as const).map((st) => (
+                          <button
+                            key={st}
+                            onClick={() => setAdoptionFilter(st)}
+                            className={`px-3 py-1.5 rounded-md font-medium transition ${
+                              adoptionFilter === st
+                                ? "bg-zinc-800 text-white shadow-sm"
+                                : "text-zinc-400 hover:text-zinc-200"
+                            }`}
+                          >
+                            {st === "ALL" && "All Modules"}
+                            {st === "HIGH" && "High Adoption (≥50%)"}
+                            {st === "IN_PROGRESS" && "In Adoption (1-49%)"}
+                            {st === "DEFICIT" && "Skill Gap (0%)"}
+                          </button>
+                        ))}
+                      </div>
 
-                {/* Search Input */}
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={auditSearchQuery}
-                    onChange={(e) => setAuditSearchQuery(e.target.value)}
-                    placeholder="Filter learner modules by topic title or keyword..."
-                    className="w-full pl-9 pr-3 py-2 bg-[#0a0a0c] border border-zinc-800 rounded-lg text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Granular Module-by-Module Progress List */}
-              <div className="space-y-2.5 max-h-[520px] overflow-y-auto pr-1">
-                {memberAuditTopics.length === 0 ? (
-                  <div className="p-12 text-center text-xs text-zinc-400 border border-dashed border-zinc-800 rounded-xl bg-[#0a0a0c]/50">
-                    <CheckCircle2 className="w-8 h-8 text-zinc-600 mx-auto mb-2 opacity-50" />
-                    <p className="font-semibold text-zinc-300">No modules match this filter</p>
-                    <p className="text-[11px] text-zinc-500 mt-1">Try selecting another status tab or domain.</p>
-                  </div>
-                ) : (
-                  memberAuditTopics.map(({ topic, domain, status, note }) => {
-                    const isCompleted = status === "COMPLETED"
-                    const isInProgress = status === "IN_PROGRESS"
-
-                    return (
-                      <div
-                        key={topic.id}
-                        className={`p-3.5 rounded-xl border transition ${
-                          isCompleted
-                            ? "bg-[#0e1612]/40 border-emerald-900/50"
-                            : isInProgress
-                            ? "bg-[#0e1320]/40 border-blue-900/50"
-                            : "bg-[#0e0f12] border-zinc-800/80"
-                        }`}
+                      {/* Domain Dropdown */}
+                      <select
+                        value={orgDomainFilter}
+                        onChange={(e) => setOrgDomainFilter(e.target.value)}
+                        className="bg-[#0a0a0c] border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-blue-500 font-medium"
                       >
-                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-[10px] font-mono text-zinc-400 bg-zinc-800/80 px-2 py-0.5 rounded">
-                                {domain.code} · {domain.name}
-                              </span>
-                              <div className="flex items-center gap-1">
-                                {topic.roles.map((r) => (
-                                  <span key={r} className="text-[9px] text-zinc-500 font-medium">
-                                    • {r}
+                        <option value="ALL">All Domains ({domains.length})</option>
+                        {domains.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.code} · {d.name} ({d.topics.length})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Search Input */}
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={orgSearchQuery}
+                        onChange={(e) => setOrgSearchQuery(e.target.value)}
+                        placeholder="Search modules by title, keyword, or role tags..."
+                        className="w-full pl-9 pr-3 py-2 bg-[#0a0a0c] border border-zinc-800 rounded-lg text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Modules Adoption List */}
+                  <div className="space-y-3 max-h-[580px] overflow-y-auto pr-1">
+                    {allModulesAdoption.length === 0 ? (
+                      <div className="p-12 text-center text-xs text-zinc-400 border border-dashed border-zinc-800 rounded-xl bg-[#0a0a0c]/50">
+                        <CheckCircle2 className="w-8 h-8 text-zinc-600 mx-auto mb-2 opacity-50" />
+                        <p className="font-semibold text-zinc-300">No modules match this adoption filter</p>
+                        <p className="text-[11px] text-zinc-500 mt-1">Try resetting the adoption tab or selecting all domains.</p>
+                      </div>
+                    ) : (
+                      allModulesAdoption.map(({ topic, domain, completedLearners, inProgressLearners, adoptionPercentage, totalLearnersCount }) => {
+                        const isExpanded = expandedModuleId === topic.id
+                        const isHigh = adoptionPercentage >= 50
+                        const isZero = adoptionPercentage === 0
+
+                        return (
+                          <div
+                            key={topic.id}
+                            className={`p-4 rounded-xl border transition ${
+                              isHigh
+                                ? "bg-[#0e1612]/30 border-emerald-900/40"
+                                : isZero
+                                ? "bg-[#181116]/30 border-red-950/40"
+                                : "bg-[#0e0f12] border-zinc-800/80"
+                            }`}
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  <span className="text-[10px] font-mono text-zinc-400 bg-zinc-800/80 px-2 py-0.5 rounded">
+                                    {domain.code} · {domain.name}
                                   </span>
-                                ))}
+                                  {topic.roles.map((r) => (
+                                    <span key={r} className="text-[9px] text-zinc-500 font-medium">
+                                      • {r}
+                                    </span>
+                                  ))}
+                                </div>
+                                <h4 className="text-sm font-bold text-zinc-100">{topic.title}</h4>
+                                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                                  {topic.description}
+                                </p>
+                              </div>
+
+                              {/* Org Adoption Percentage & Progress Bar */}
+                              <div className="w-full sm:w-56 shrink-0 bg-[#0a0a0c] p-3 rounded-lg border border-zinc-800/80 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] text-zinc-400 font-medium">Pod Adoption</span>
+                                  <span className={`text-base font-black ${
+                                    isHigh ? "text-emerald-400" : isZero ? "text-red-400" : "text-blue-400"
+                                  }`}>
+                                    {adoptionPercentage}%
+                                  </span>
+                                </div>
+
+                                {/* Adoption Bar */}
+                                <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                                  <div
+                                    style={{ width: `${adoptionPercentage}%` }}
+                                    className={`h-full rounded-full transition-all duration-300 ${
+                                      isHigh ? "bg-emerald-500" : isZero ? "bg-zinc-700" : "bg-blue-500"
+                                    }`}
+                                  />
+                                </div>
+
+                                <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5">
+                                  <span>{completedLearners.length}/{totalLearnersCount} Completed</span>
+                                  <span>{inProgressLearners.length} In Progress</span>
+                                </div>
                               </div>
                             </div>
-                            <h4 className="text-xs font-semibold text-zinc-100">{topic.title}</h4>
-                            <p className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed line-clamp-2">
-                              {topic.description}
-                            </p>
-                          </div>
 
-                          {/* Status Badge & Unit Head Toggle Control */}
-                          <div className="flex items-center gap-2 shrink-0">
-                            {isCompleted && (
-                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-800/50 text-[11px] font-medium">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                                <span>Completed</span>
-                              </span>
-                            )}
-                            {isInProgress && (
-                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-950/60 text-blue-300 border border-blue-800/50 text-[11px] font-medium">
-                                <Clock className="w-3.5 h-3.5 text-blue-400" />
-                                <span>In Progress</span>
-                              </span>
-                            )}
-                            {!isCompleted && !isInProgress && (
-                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-zinc-800/60 text-zinc-400 border border-zinc-700/50 text-[11px] font-medium">
-                                <Circle className="w-3.5 h-3.5 text-zinc-500" />
-                                <span>Not Started</span>
-                              </span>
-                            )}
+                            {/* Completed Learners Avatars & Breakdown Toggle */}
+                            <div className="mt-3 pt-3 border-t border-zinc-800/80 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-zinc-400 font-medium">Completed by:</span>
+                                {completedLearners.length === 0 ? (
+                                  <span className="text-[11px] text-red-400/80 font-medium">No learners yet (Training Gap)</span>
+                                ) : (
+                                  <div className="flex items-center -space-x-1.5">
+                                    {completedLearners.map((l) => (
+                                      <div
+                                        key={l.id}
+                                        title={`${l.name} (${l.role}) - Completed`}
+                                        className="w-6 h-6 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-700 flex items-center justify-center text-[10px] font-bold"
+                                      >
+                                        {l.avatar}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
 
-                            {/* Sign-off / Toggle status action button */}
-                            <button
-                              onClick={() => handleToggleMemberTopic(topic.id)}
-                              title="Toggle learner progress status"
-                              className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 text-[11px] font-medium transition"
-                            >
-                              Toggle
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* If learner logged personal note for this topic */}
-                        {note && (
-                          <div className="mt-2.5 pt-2 border-t border-zinc-800/80 bg-[#0a0a0c] p-2.5 rounded-lg border text-xs">
-                            <div className="flex items-center gap-1.5 text-[10px] font-medium text-blue-400 mb-1">
-                              <FileText className="w-3 h-3" />
-                              <span>Learner Implementation Note:</span>
+                              <button
+                                onClick={() => setExpandedModuleId(isExpanded ? null : topic.id)}
+                                className="text-xs text-zinc-400 hover:text-white flex items-center gap-1 font-medium transition"
+                              >
+                                <span>{isExpanded ? "Hide Breakdown" : "Inspect Learner Notes & Status"}</span>
+                                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                              </button>
                             </div>
-                            <p className="text-[11px] text-zinc-300 font-mono leading-relaxed">{note}</p>
+
+                            {/* Expanded Learner Inspection Drawer */}
+                            {isExpanded && (
+                              <div className="mt-3 pt-3 border-t border-zinc-800 bg-[#0a0a0c] p-3 rounded-lg space-y-2.5 text-xs">
+                                <h5 className="font-semibold text-zinc-300 uppercase tracking-wider text-[10px]">
+                                  Learner Pacing Breakdown for "{topic.title}":
+                                </h5>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {rankedLeaderboard.map((learner) => {
+                                    const st = learner.progress[topic.id]
+                                    const note = learner.notes[topic.id]
+                                    const isComp = st === "COMPLETED"
+                                    const isInP = st === "IN_PROGRESS"
+
+                                    return (
+                                      <div
+                                        key={learner.id}
+                                        className="p-2.5 rounded-lg border border-zinc-800 bg-[#121316] flex flex-col justify-between"
+                                      >
+                                        <div className="flex items-center justify-between mb-1.5">
+                                          <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-zinc-800 text-[10px] font-bold text-zinc-200 flex items-center justify-center">
+                                              {learner.avatar}
+                                            </div>
+                                            <div>
+                                              <p className="font-semibold text-xs text-white">{learner.name}</p>
+                                              <p className="text-[10px] text-zinc-400">{learner.role}</p>
+                                            </div>
+                                          </div>
+
+                                          <button
+                                            onClick={() => handleToggleLearnerTopic(learner.id, topic.id)}
+                                            className={`text-[10px] px-2 py-0.5 rounded font-medium border transition ${
+                                              isComp
+                                                ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                                                : isInP
+                                                ? "bg-blue-950 text-blue-300 border-blue-800"
+                                                : "bg-zinc-800 text-zinc-400 border-zinc-700"
+                                            }`}
+                                          >
+                                            {isComp ? "Completed ✓" : isInP ? "In Progress" : "Not Started"}
+                                          </button>
+                                        </div>
+
+                                        {note && (
+                                          <div className="mt-1 pt-1 border-t border-zinc-800/80 text-[10px] text-zinc-400 font-mono">
+                                            <span className="text-blue-400 font-sans font-medium">Note: </span>
+                                            {note}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        )}
+                        )
+                      })
+                    )}
+                  </div>
+                </>
+              ) : currentLearner ? (
+                /* ================= INDIVIDUAL LEARNER DRILLDOWN ================= */
+                <>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800 pb-4 gap-4">
+                    <div className="flex items-center space-x-3.5">
+                      <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-base font-bold text-white shadow">
+                        {currentLearner.avatar}
                       </div>
-                    )
-                  })
-                )}
-              </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-lg font-bold text-white">{currentLearner.name}</h2>
+                          <span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700 font-medium">
+                            {currentLearner.role}
+                          </span>
+                        </div>
+                        <p className="text-xs text-zinc-400 mt-0.5">{currentLearner.email}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <span className="text-2xl font-bold text-emerald-400">{currentLearner.percentage}%</span>
+                        <p className="text-[10px] text-zinc-500">Readiness Score</p>
+                      </div>
+                      <button
+                        onClick={() => setAuditViewMode("ALL_LEARNERS")}
+                        className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition"
+                      >
+                        ← Back to All Learners %
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Individual Modules Audit Checklist */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
+                      Module Checklist for {currentLearner.name} ({currentLearner.completed} of {totalTopicsCount} Completed):
+                    </h4>
+
+                    <div className="space-y-2.5 max-h-[520px] overflow-y-auto pr-1">
+                      {domains.flatMap((d) => d.topics.map((t) => ({ topic: t, domain: d }))).map(({ topic, domain }) => {
+                        const st = currentLearner.progress[topic.id]
+                        const isComp = st === "COMPLETED"
+                        const isInP = st === "IN_PROGRESS"
+                        const note = currentLearner.notes[topic.id]
+
+                        return (
+                          <div
+                            key={topic.id}
+                            className={`p-3.5 rounded-xl border transition ${
+                              isComp
+                                ? "bg-[#0e1612]/40 border-emerald-900/50"
+                                : isInP
+                                ? "bg-[#0e1320]/40 border-blue-900/50"
+                                : "bg-[#0e0f12] border-zinc-800/80"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <span className="text-[10px] font-mono text-zinc-400 bg-zinc-800/80 px-2 py-0.5 rounded">
+                                  {domain.code} · {domain.name}
+                                </span>
+                                <h5 className="text-xs font-bold text-white mt-1">{topic.title}</h5>
+                                <p className="text-[11px] text-zinc-400 mt-0.5">{topic.description}</p>
+                              </div>
+
+                              <button
+                                onClick={() => handleToggleLearnerTopic(currentLearner.id, topic.id)}
+                                className={`text-xs px-2.5 py-1 rounded-lg font-medium border transition shrink-0 ${
+                                  isComp
+                                    ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                                    : isInP
+                                    ? "bg-blue-950 text-blue-300 border-blue-800"
+                                    : "bg-zinc-800 text-zinc-400 border-zinc-700"
+                                }`}
+                              >
+                                {isComp ? "Completed ✓" : isInP ? "In Progress" : "Not Started"}
+                              </button>
+                            </div>
+
+                            {note && (
+                              <div className="mt-2 pt-2 border-t border-zinc-800 text-xs text-zinc-300 font-mono bg-[#0a0a0c] p-2 rounded">
+                                <span className="text-blue-400 font-sans font-medium">Learner Note: </span>
+                                {note}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="p-12 text-center text-xs text-zinc-400 border border-dashed border-zinc-800 rounded-xl bg-[#0a0a0c]/60 space-y-2">
+                  <Users className="w-8 h-8 text-zinc-600 mx-auto" />
+                  <p className="text-xs font-semibold text-zinc-300">No Learner Selected</p>
+                  <p className="text-[11px] text-zinc-500 max-w-[240px] mx-auto leading-relaxed">
+                    Select a learner from the leaderboard on the left, or view organizational competency adoption.
+                  </p>
+                  <button
+                    onClick={() => setAuditViewMode("ALL_LEARNERS")}
+                    className="mt-3 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition"
+                  >
+                    View All Learners Adoption
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-VIEW 2: CURRICULUM & MODULE MANAGER (Add, Edit, Delete any module) */}
+      {/* SUB-VIEW 2: CURRICULUM & MODULE MANAGER (Add, Edit, Delete any module)    */}
       {/* ========================================================================= */}
       {activeSubTab === "curriculum" && (
         <div className="space-y-6">
           {/* Controls bar: Search, Domain filter, Add New Module button */}
           <div className="bg-[#121316] p-5 rounded-xl border border-zinc-800/80 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <div className="flex flex-1 items-center gap-3">
-              {/* Search */}
               <div className="relative flex-1">
                 <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -735,7 +1014,6 @@ export default function UnitHeadManagementView({
                 />
               </div>
 
-              {/* Domain Filter */}
               <select
                 value={moduleDomainFilter}
                 onChange={(e) => setModuleDomainFilter(e.target.value)}
@@ -750,7 +1028,6 @@ export default function UnitHeadManagementView({
               </select>
             </div>
 
-            {/* Add New Module Button */}
             <button
               onClick={openAddModal}
               className="px-4 py-2 rounded-lg bg-white hover:bg-zinc-200 text-black text-xs font-semibold shadow flex items-center justify-center gap-1.5 transition"
@@ -771,7 +1048,6 @@ export default function UnitHeadManagementView({
             ) : (
               curriculumManagerDomains.map((domain) => (
                 <div key={domain.id} className="bg-[#121316] p-6 rounded-2xl border border-zinc-800/80 shadow-sm space-y-4">
-                  {/* Domain Header */}
                   <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
                     <div className="flex items-center space-x-3">
                       <span className="w-7 h-7 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-300">
@@ -787,7 +1063,6 @@ export default function UnitHeadManagementView({
                     </span>
                   </div>
 
-                  {/* Modules in this Domain */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                     {domain.topics.map((topic) => (
                       <div
@@ -813,7 +1088,6 @@ export default function UnitHeadManagementView({
                           <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{topic.description}</p>
                         </div>
 
-                        {/* Actions: Edit & Delete */}
                         <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-end gap-2">
                           <button
                             onClick={() => openEditModal(topic)}
@@ -840,9 +1114,7 @@ export default function UnitHeadManagementView({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* MODAL: ADD NEW MODULE */}
-      {/* ========================================================================= */}
+      {/* ================= MODALS: ADD / EDIT / DELETE ================= */}
       {isAddModuleModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#121316] border border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
@@ -862,7 +1134,6 @@ export default function UnitHeadManagementView({
             </div>
 
             <div className="space-y-3.5">
-              {/* Domain Select */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300 mb-1">Curriculum Domain</label>
                 <select
@@ -878,7 +1149,6 @@ export default function UnitHeadManagementView({
                 </select>
               </div>
 
-              {/* Title Input */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300 mb-1">Module Title</label>
                 <input
@@ -890,7 +1160,6 @@ export default function UnitHeadManagementView({
                 />
               </div>
 
-              {/* Description Input */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300 mb-1">Learning Description & Objective</label>
                 <textarea
@@ -902,7 +1171,6 @@ export default function UnitHeadManagementView({
                 />
               </div>
 
-              {/* Target Roles */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300 mb-1.5">Target Roles</label>
                 <div className="flex flex-wrap gap-1.5">
@@ -937,7 +1205,7 @@ export default function UnitHeadManagementView({
               <button
                 onClick={handleSaveNewModule}
                 disabled={!formTitle.trim() || !formDescription.trim()}
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-white hover:bg-zinc-200 text-black shadow transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-white hover:bg-zinc-200 text-black shadow transition disabled:opacity-50"
               >
                 Create Module
               </button>
@@ -946,9 +1214,6 @@ export default function UnitHeadManagementView({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* MODAL: EDIT MODULE */}
-      {/* ========================================================================= */}
       {editingTopic && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#121316] border border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
@@ -968,7 +1233,6 @@ export default function UnitHeadManagementView({
             </div>
 
             <div className="space-y-3.5">
-              {/* Domain Select */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300 mb-1">Curriculum Domain</label>
                 <select
@@ -984,7 +1248,6 @@ export default function UnitHeadManagementView({
                 </select>
               </div>
 
-              {/* Title Input */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300 mb-1">Module Title</label>
                 <input
@@ -995,9 +1258,8 @@ export default function UnitHeadManagementView({
                 />
               </div>
 
-              {/* Description Input */}
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">Learning Description & Objective</label>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">Learning Description</label>
                 <textarea
                   rows={3}
                   value={formDescription}
@@ -1006,7 +1268,6 @@ export default function UnitHeadManagementView({
                 />
               </div>
 
-              {/* Target Roles */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300 mb-1.5">Target Roles</label>
                 <div className="flex flex-wrap gap-1.5">
@@ -1050,9 +1311,6 @@ export default function UnitHeadManagementView({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* MODAL: DELETE CONFIRMATION */}
-      {/* ========================================================================= */}
       {deletingTopic && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#121316] border border-red-900/60 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -1082,6 +1340,86 @@ export default function UnitHeadManagementView({
                 className="px-4 py-2 rounded-lg text-xs font-semibold bg-red-600 hover:bg-red-500 text-white shadow transition"
               >
                 Delete Module
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Enroll Real Learner */}
+      {isEnrollModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#121316] border border-zinc-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white tracking-tight">Enroll Pod Member</h3>
+                  <p className="text-xs text-zinc-400">Add a real team member to track curriculum progress</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsEnrollModalOpen(false)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  value={enrollName}
+                  onChange={(e) => setEnrollName(e.target.value)}
+                  placeholder="e.g. Jane Doe"
+                  className="w-full bg-[#0a0a0c] border border-zinc-800 rounded-lg p-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">Work Email</label>
+                <input
+                  type="email"
+                  value={enrollEmail}
+                  onChange={(e) => setEnrollEmail(e.target.value)}
+                  placeholder="e.g. member@company.com"
+                  className="w-full bg-[#0a0a0c] border border-zinc-800 rounded-lg p-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">Discipline Track</label>
+                <select
+                  value={enrollRole}
+                  onChange={(e) => setEnrollRole(e.target.value)}
+                  className="w-full bg-[#0a0a0c] border border-zinc-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                >
+                  <option value="Product Engineer">Product Engineer</option>
+                  <option value="AI Product Manager">AI Product Manager</option>
+                  <option value="Product Consultant">Product Consultant</option>
+                  <option value="Service Designer">Service Designer</option>
+                  <option value="Cloud Architect">Cloud Architect</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-zinc-800">
+              <button
+                onClick={() => setIsEnrollModalOpen(false)}
+                className="px-4 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEnrollLearner}
+                disabled={!enrollName.trim() || !enrollEmail.trim()}
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-white hover:bg-zinc-200 text-black shadow transition disabled:opacity-50"
+              >
+                Enroll Member
               </button>
             </div>
           </div>

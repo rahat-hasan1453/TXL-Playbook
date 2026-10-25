@@ -29,14 +29,12 @@ export default function LoginPage() {
   // Login Form States
   const [loginEmail, setLoginEmail] = useState("")
   const [loginPassword, setLoginPassword] = useState("")
-  const [loginRole, setLoginRole] = useState<"LEARNER" | "UNIT_HEAD">("LEARNER")
 
   // Signup Form States
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [signupEmail, setSignupEmail] = useState("")
   const [signupPassword, setSignupPassword] = useState("")
-  const [signupRole, setSignupRole] = useState<"LEARNER" | "UNIT_HEAD">("LEARNER")
   const [signupDiscipline, setSignupDiscipline] = useState("Product Engineer")
   const [registerViaBlocks, setRegisterViaBlocks] = useState(true)
 
@@ -91,13 +89,9 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          role: loginRole,
           email: loginEmail,
-          name:
-            loginRole === "UNIT_HEAD"
-              ? "Sarah Jenkins (Lead)"
-              : name || "Rahat Chowdhury",
-          discipline: loginRole === "UNIT_HEAD" ? "Leadership & Strategy" : "AI Product Manager",
+          password: loginPassword,
+          name: name || undefined,
           avatar: initials,
         }),
       })
@@ -131,7 +125,6 @@ export default function LoginPage() {
           lastName,
           email: signupEmail,
           password: signupPassword,
-          role: signupRole,
           discipline: signupDiscipline,
           viaBlocks: registerViaBlocks,
         }),
@@ -148,19 +141,6 @@ export default function LoginPage() {
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Sign up failed")
       setLoading(false)
-    }
-  }
-
-  // Quick fill preset test credentials
-  const fillPreset = (role: "LEARNER" | "UNIT_HEAD") => {
-    if (role === "LEARNER") {
-      setLoginEmail("rahat@selise.ch")
-      setLoginPassword("••••••••••••")
-      setLoginRole("LEARNER")
-    } else {
-      setLoginEmail("sarah.lead@selise.ch")
-      setLoginPassword("••••••••••••")
-      setLoginRole("UNIT_HEAD")
     }
   }
 
@@ -331,48 +311,12 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/* Access Role Selector */}
-              <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wider text-[11px]">
-                  Operational Workspace Role
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setLoginRole("LEARNER")}
-                    className={`p-3 text-left border rounded-xl transition flex flex-col justify-between ${
-                      loginRole === "LEARNER"
-                        ? "bg-[#16181f] border-zinc-400 text-white ring-1 ring-zinc-400/30 shadow-sm"
-                        : "bg-[#0a0a0c] border-zinc-800 text-zinc-400 hover:border-zinc-700"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <span className="text-xs font-semibold flex items-center gap-1.5">
-                        <GraduationCap className="w-3.5 h-3.5 text-zinc-300" /> Learner
-                      </span>
-                      {loginRole === "LEARNER" && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-                    </div>
-                    <span className="text-[11px] text-zinc-400 mt-1 font-normal">Curriculum & Personal Notes</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setLoginRole("UNIT_HEAD")}
-                    className={`p-3 text-left border rounded-xl transition flex flex-col justify-between ${
-                      loginRole === "UNIT_HEAD"
-                        ? "bg-[#1c1427] border-purple-500 text-white ring-1 ring-purple-500/30 shadow-sm"
-                        : "bg-[#0a0a0c] border-zinc-800 text-zinc-400 hover:border-zinc-700"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <span className="text-xs font-semibold flex items-center gap-1.5 text-purple-300">
-                        <ShieldCheck className="w-3.5 h-3.5 text-purple-400" /> Unit Head
-                      </span>
-                      {loginRole === "UNIT_HEAD" && <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />}
-                    </div>
-                    <span className="text-[11px] text-zinc-400 mt-1 font-normal">Executive Org Matrix & Auditing</span>
-                  </button>
-                </div>
+              {/* IAM Governance Info Notice */}
+              <div className="p-3 bg-[#0a0a0c] border border-zinc-800/80 rounded-xl flex items-center gap-2.5 text-xs text-zinc-400">
+                <Lock className="w-4 h-4 text-zinc-500 shrink-0" />
+                <span>
+                  Role & permissions are governed centrally via <strong className="text-zinc-300">SELISE Blocks IAM</strong>.
+                </span>
               </div>
 
               {/* Sign In Submit Button */}
@@ -470,38 +414,28 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/* Discipline and Role */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1">
-                    Discipline Track
-                  </label>
-                  <select
-                    value={signupDiscipline}
-                    onChange={(e) => setSignupDiscipline(e.target.value)}
-                    className="w-full bg-[#0a0a0c] border border-zinc-800 focus:border-blue-500 rounded-lg p-2.5 text-xs text-zinc-100 focus:outline-none transition shadow-sm"
-                  >
-                    <option value="Product Engineer">Product Engineer</option>
-                    <option value="AI Product Manager">AI Product Manager</option>
-                    <option value="Technical Consultant">Technical Consultant</option>
-                    <option value="Service Designer">Service Designer</option>
-                    <option value="Cloud Architect">Cloud Architect</option>
-                  </select>
-                </div>
+              {/* Discipline Track */}
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">
+                  Discipline Track
+                </label>
+                <select
+                  value={signupDiscipline}
+                  onChange={(e) => setSignupDiscipline(e.target.value)}
+                  className="w-full bg-[#0a0a0c] border border-zinc-800 focus:border-blue-500 rounded-lg p-2.5 text-xs text-zinc-100 focus:outline-none transition shadow-sm"
+                >
+                  <option value="Product Engineer">Product Engineer</option>
+                  <option value="AI Product Manager">AI Product Manager</option>
+                  <option value="Technical Consultant">Technical Consultant</option>
+                  <option value="Service Designer">Service Designer</option>
+                  <option value="Cloud Architect">Cloud Architect</option>
+                </select>
+              </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1">
-                    Assigned Role
-                  </label>
-                  <select
-                    value={signupRole}
-                    onChange={(e) => setSignupRole(e.target.value as "LEARNER" | "UNIT_HEAD")}
-                    className="w-full bg-[#0a0a0c] border border-zinc-800 focus:border-blue-500 rounded-lg p-2.5 text-xs text-zinc-100 focus:outline-none transition shadow-sm"
-                  >
-                    <option value="LEARNER">Learner</option>
-                    <option value="UNIT_HEAD">Unit Head</option>
-                  </select>
-                </div>
+              {/* IAM Role Governance Notice */}
+              <div className="p-2.5 bg-[#0a0a0c] border border-zinc-800/80 rounded-lg flex items-center gap-2 text-[11px] text-zinc-400">
+                <Lock className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                <span>Account roles & permission tiers are provisioned centrally via SELISE Blocks IAM.</span>
               </div>
 
               {/* Register through SELISE Blocks Checkbox Option */}

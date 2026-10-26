@@ -1,0 +1,29 @@
+[
+  {
+    "id": "user-nico-akash",
+    "email": "rahat.akash1453@gmail.com",
+    "passwordHash": "f15b6dac9f3fd2ea72892344031f6acd76ff2109e974d7b8468eef83a65468b2",
+    "name": "Nico Paz",
+    "role": "LEARNER",
+    "discipline": "Cloud Systems Engineer",
+    "avatar": "NP"
+  },
+  {
+    "id": "user-enzo-hasan",
+    "email": "rahat.hasan1453@gmail.com",
+    "passwordHash": "f15b6dac9f3fd2ea72892344031f6acd76ff2109e974d7b8468eef83a65468b2",
+    "name": "Enzo Farnendes",
+    "role": "LEARNER",
+    "discipline": "Product Engineer",
+    "avatar": "EF"
+  },
+  {
+    "id": "user-rahat-head",
+    "email": "rahat.hasan@selisegroup.com",
+    "passwordHash": "f15b6dac9f3fd2ea72892344031f6acd76ff2109e974d7b8468eef83a65468b2",
+    "name": "Rahat Hasan",
+    "role": "UNIT_HEAD",
+    "discipline": "Leadership & Strategy",
+    "avatar": "RH"
+  }
+]

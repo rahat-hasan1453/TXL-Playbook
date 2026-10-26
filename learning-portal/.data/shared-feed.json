@@ -1,0 +1,42 @@
+[
+  {
+    "userName": "Enzo Farnendes",
+    "userRole": "Product Engineer",
+    "topicTitle": "Lean Startup and MVP",
+    "domainName": "Product",
+    "note": "Built an end-to-end integration test harness before writing business logic. Cut bug detection time by 80%.",
+    "id": "sh-1792989657560-s70i",
+    "timestamp": "Just now",
+    "likes": 1
+  },
+  {
+    "userName": "Enzo Farnendes",
+    "userRole": "Product Engineer",
+    "topicTitle": "Lean Startup and MVP",
+    "domainName": "Product",
+    "note": "Built an end-to-end integration test harness before writing business logic. Cut bug detection time by 80%.",
+    "id": "sh-1792989575696-0a4x",
+    "timestamp": "Just now",
+    "likes": 1
+  },
+  {
+    "id": "sh-seed-1",
+    "userName": "Nico Paz",
+    "userRole": "Cloud Systems Engineer",
+    "topicTitle": "Business Model Canvas",
+    "domainName": "Business",
+    "note": "Applied the BMC framework to map out cloud multi-tenant infrastructure costs vs tier-based client value. Essential for unit economics.",
+    "timestamp": "Just now",
+    "likes": 2
+  },
+  {
+    "id": "sh-seed-2",
+    "userName": "Enzo Farnendes",
+    "userRole": "Product Engineer",
+    "topicTitle": "PRD writing",
+    "domainName": "Product",
+    "note": "When authoring spec-driven PRDs for autonomous coding agents, explicit acceptance criteria and JSON payload schemas eliminate 90% of regressions.",
+    "timestamp": "2 hours ago",
+    "likes": 4
+  }
+]

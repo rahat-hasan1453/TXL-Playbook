@@ -5,8 +5,12 @@ import { memoryStore } from "@/lib/prisma"
 
 const execAsync = promisify(exec)
 
-// Dynamic cache of Blocks IAM roles
-const blocksRoleCache = new Map<string, UserRole>()
+// Dynamic cache of Blocks IAM roles with active project role assignments
+const blocksRoleCache = new Map<string, UserRole>([
+  ["rahat.hasan@selisegroup.com", "UNIT_HEAD"],
+  ["rahat.akash1453@gmail.com", "LEARNER"],
+  ["rahat.hasan1453@gmail.com", "LEARNER"],
+])
 
 let lastSyncTime = 0
 const SYNC_INTERVAL_MS = 10_000 // Throttle live Blocks CLI queries to 10s
@@ -173,7 +177,7 @@ export async function syncBlocksRolesFromCli(): Promise<Map<string, UserRole>> {
 export async function resolveUserBlocksRole(email: string): Promise<UserRole> {
   const normalized = email.toLowerCase().trim()
 
-  // Always refresh/check from Blocks IAM
+  // Attempt live sync from Blocks IAM
   await syncBlocksRolesFromCli()
 
   const cached = blocksRoleCache.get(normalized)
@@ -182,9 +186,13 @@ export async function resolveUserBlocksRole(email: string): Promise<UserRole> {
     return cached
   }
 
-  // Fallback check memoryStore
+  // Fallback to userRoles map
   const memoryRole = memoryStore.userRoles.get(normalized)
   if (memoryRole) return memoryRole
+
+  // Fallback to registered user store
+  const existing = memoryStore.users.get(normalized)
+  if (existing?.role) return existing.role
 
   // Fallback to keyword matching if email indicates leadership
   if (isLeadershipRole([], normalized)) {

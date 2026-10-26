@@ -1,0 +1,36 @@
+{
+  "rahat.akash1453@gmail.com": {
+    "id": "learner-akash",
+    "name": "Nico Paz",
+    "email": "rahat.akash1453@gmail.com",
+    "role": "Cloud Systems Engineer",
+    "avatar": "NP",
+    "progress": {
+      "biz-1": "COMPLETED"
+    },
+    "notes": {
+      "biz-1": "Completed BMC for cloud architectural assessment. Very clear value proposition."
+    }
+  },
+  "rahat.hasan1453@gmail.com": {
+    "id": "learner-enzo",
+    "name": "Enzo Farnendes",
+    "email": "rahat.hasan1453@gmail.com",
+    "role": "Product Engineer",
+    "avatar": "EF",
+    "progress": {
+      "biz-1": "COMPLETED",
+      "prod-1": "COMPLETED"
+    },
+    "notes": {}
+  },
+  "rahat.hasan@selisegroup.com": {
+    "id": "user-rahat-head",
+    "name": "Rahat Hasan",
+    "email": "rahat.hasan@selisegroup.com",
+    "role": "Cloud Systems Engineer",
+    "avatar": "RH",
+    "progress": {},
+    "notes": {}
+  }
+}

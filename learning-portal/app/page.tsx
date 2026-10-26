@@ -62,7 +62,25 @@ export default function TXLLearningPortal() {
     if (typeof window !== "undefined") {
       localStorage.setItem("txl_curriculum_domains", JSON.stringify(updatedDomains))
     }
+    // Persist to server
+    fetch("/api/curriculum", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domains: updatedDomains }),
+    }).catch((err) => console.warn("Failed to persist curriculum:", err))
   }
+
+  // Load latest curriculum from server on mount
+  useEffect(() => {
+    fetch("/api/curriculum")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.domains && Array.isArray(data.domains)) {
+          setDomains(data.domains)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const [roleUpgradeNotice, setRoleUpgradeNotice] = useState<string | null>(null)
 
@@ -180,6 +198,18 @@ export default function TXLLearningPortal() {
     likes: number
   }>>([])
 
+  // Load shared feed on mount
+  useEffect(() => {
+    fetch("/api/feed")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.feed && Array.isArray(data.feed)) {
+          setSharedLearnings(data.feed)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   // Active modal for taking notes or sharing
   const [activeModalTopic, setActiveModalTopic] = useState<Topic | null>(null)
   const [noteDraft, setNoteDraft] = useState("")
@@ -259,16 +289,24 @@ export default function TXLLearningPortal() {
   }
 
   // Publish Shared Learning
-  const handlePublishShare = () => {
+  const handlePublishShare = async () => {
     if (activeModalTopic && shareDraft.trim()) {
       const domain = domains.find((d) => d.id === activeModalTopic.domainId)
+      const noteContent = shareDraft.trim()
+      const payload = {
+        topicTitle: activeModalTopic.title,
+        domainName: domain?.name || "Curriculum",
+        note: noteContent,
+      }
+
+      const tempId = `sh-${Date.now()}`
       const newEntry = {
-        id: `sh-${Date.now()}`,
+        id: tempId,
         userName: currentUser?.name || (currentUserRole === "UNIT_HEAD" ? "Unit Lead" : "Learner"),
         userRole: currentUser?.discipline || (currentUserRole === "UNIT_HEAD" ? "Unit Head" : "Learner"),
         topicTitle: activeModalTopic.title,
         domainName: domain?.name || "Curriculum",
-        note: shareDraft,
+        note: noteContent,
         timestamp: "Just now",
         likes: 0,
       }
@@ -277,7 +315,33 @@ export default function TXLLearningPortal() {
       setActiveModalTopic(null)
       setShareDraft("")
       setActiveTab("shared-feed")
+
+      try {
+        const res = await fetch("/api/feed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+        const data = await res.json()
+        if (data?.item) {
+          setSharedLearnings((prev) => [data.item, ...prev.filter((i) => i.id !== tempId)])
+        }
+      } catch (err) {
+        console.warn("Failed to persist shared learning:", err)
+      }
     }
+  }
+
+  // Like a shared learning item
+  const handleLikeItem = (itemId: string) => {
+    setSharedLearnings((prev) =>
+      prev.map((l) => (l.id === itemId ? { ...l, likes: l.likes + 1 } : l))
+    )
+    fetch("/api/feed", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: itemId }),
+    }).catch((err) => console.warn("Failed to register like:", err))
   }
 
   if (isLoadingSession && !currentUser) {
@@ -692,11 +756,7 @@ export default function TXLLearningPortal() {
 
                     <div className="flex items-center justify-between text-xs text-zinc-400 pt-1">
                       <button
-                        onClick={() => {
-                          setSharedLearnings((prev) =>
-                            prev.map((l) => (l.id === item.id ? { ...l, likes: l.likes + 1 } : l))
-                          )
-                        }}
+                        onClick={() => handleLikeItem(item.id)}
                         className="hover:text-red-400 transition flex items-center gap-1.5 font-medium bg-zinc-800/60 px-3 py-1.5 rounded-lg border border-zinc-700/50"
                       >
                         <Heart className="w-3.5 h-3.5 text-zinc-400 hover:text-red-400" />

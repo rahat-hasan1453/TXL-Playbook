@@ -10,10 +10,17 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/login') ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/_next') ||
-    pathname === '/favicon.ico'
+    pathname === '/favicon.ico' ||
+    (pathname === '/api/feed' && request.method === 'GET') ||
+    (pathname === '/api/curriculum' && request.method === 'GET')
 
-  // If unauthenticated and accessing a protected route, redirect to /login
+  // If unauthenticated and accessing a protected route:
+  // For API routes, return 401 JSON instead of redirecting
+  // For page routes, redirect to /login
   if (!userRole && !isPublicPath) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
     const loginUrl = new URL('/login', request.url)
     return NextResponse.redirect(loginUrl)
   }

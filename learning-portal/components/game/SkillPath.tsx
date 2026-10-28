@@ -238,10 +238,13 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
                   {week.steps.map((step) => {
                     stepIndex++
                     const isToday = step.date === today
+                    // Each step is its own stacking context (transform), so the step with the open
+                    // popover must sit above the steps after it
+                    const stepOpen = step.nodes.some((n) => n.topic.id === openId)
                     return (
                       <li
                         key={step.key}
-                        className="relative flex flex-col items-center"
+                        className={`relative flex flex-col items-center ${stepOpen ? "z-20" : "z-0"}`}
                         style={{ transform: `translateX(${OFFSETS[stepIndex % OFFSETS.length]}px)` }}
                       >
                         {step.firstOfDay && (

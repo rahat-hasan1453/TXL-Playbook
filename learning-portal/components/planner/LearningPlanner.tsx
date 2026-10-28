@@ -564,14 +564,17 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
                     </p>
                   </div>
                   <button
+                    role="checkbox"
+                    aria-checked={done}
+                    aria-label={`${done ? "Mark not done" : "Mark done"}: ${topic.title}`}
                     onClick={() => onSetTopicCompleted(item.topicId, !done)}
-                    className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                    className={`shrink-0 w-9 h-9 rounded-xl border-2 border-b-4 flex items-center justify-center transition ${
                       done
-                        ? "bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700"
-                        : "bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-700 border-b-4"
+                        ? "bg-emerald-500 border-emerald-700 text-black"
+                        : "bg-transparent border-zinc-600 hover:border-emerald-500 text-transparent hover:text-emerald-500/50"
                     }`}
                   >
-                    {done ? "Undo" : "Done"}
+                    <Check className="w-5 h-5 stroke-[3]" />
                   </button>
                 </div>
               )
@@ -592,14 +595,17 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
                   </div>
                   {canTick && (
                     <button
+                      role="checkbox"
+                      aria-checked={done}
+                      aria-label={`${done ? "Mark not done" : "Mark done"}: ${goal.title}`}
                       onClick={() => toggleGoal(goal.id, selected, !done)}
-                      className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                      className={`shrink-0 w-9 h-9 rounded-xl border-2 border-b-4 flex items-center justify-center transition ${
                         done
-                          ? "bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700"
-                          : "bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-700 border-b-4"
+                          ? "bg-emerald-500 border-emerald-700 text-black"
+                          : "bg-transparent border-zinc-600 hover:border-emerald-500 text-transparent hover:text-emerald-500/50"
                       }`}
                     >
-                      {done ? "Undo" : "Done"}
+                      <Check className="w-5 h-5 stroke-[3]" />
                     </button>
                   )}
                 </div>

@@ -1,9 +1,9 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { Check, FileText, Play, RotateCcw, Star, Target, Undo2 } from "lucide-react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { ArrowDown, Check, FileText, Play, Star, Target, Trophy, Undo2, X } from "lucide-react"
 import type { Domain, Topic } from "@/lib/curriculumData"
-import { DAILY_GOAL_OPTIONS, GameSummary, XP_RULES } from "@/lib/gamification"
+import { DAILY_GOAL_OPTIONS, GameSummary, LeaderboardEntry, XP_RULES } from "@/lib/gamification"
 import { LearningPlan, compulsoryTopics } from "@/lib/learning-plan"
 import { COMPULSORY_COLOR, topicTrack, trackColor } from "@/lib/track-colors"
 import { onReward } from "@/lib/reward-events"
@@ -22,6 +22,7 @@ interface PathUnit {
   subtitle: string
   compulsory: boolean
   topics: Topic[]
+  banner: string
 }
 
 // Gentle zig-zag, Duolingo style
@@ -37,12 +38,27 @@ function buildUnits(domains: Domain[], tracks: string[]): PathUnit[] {
       subtitle: "Compulsory for every role",
       compulsory: true,
       topics: compulsory,
+      banner: COMPULSORY_COLOR.banner,
     },
   ]
   for (const domain of domains) {
     const topics = domain.topics.filter((t) => !compulsoryIds.has(t.id) && tracks.some((tr) => t.roles.includes(tr)))
     if (topics.length) {
-      units.push({ id: `unit-${domain.id}`, title: domain.name, subtitle: domain.focus, compulsory: false, topics })
+      // The unit takes the colour of the chosen track most of its topics belong to
+      const counts = new Map<string, number>()
+      topics.forEach((t) => {
+        const tr = topicTrack(t.roles, tracks)
+        if (tr) counts.set(tr, (counts.get(tr) || 0) + 1)
+      })
+      const main = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "ALL"
+      units.push({
+        id: `unit-${domain.id}`,
+        title: domain.name,
+        subtitle: domain.focus,
+        compulsory: false,
+        topics,
+        banner: trackColor(main).banner,
+      })
     }
   }
   return units
@@ -51,7 +67,9 @@ function buildUnits(domains: Domain[], tracks: string[]): PathUnit[] {
 export default function SkillPath({ domains, progressState, onSetTopicCompleted, onOpenNotes, onCreatePlan }: SkillPathProps) {
   const [plan, setPlan] = useState<LearningPlan | null | undefined>(undefined)
   const [summary, setSummary] = useState<GameSummary | null>(null)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [me, setMe] = useState<LeaderboardEntry | null>(null)
+  const pathRef = useRef<HTMLElement>(null)
 
   const loadSummary = useCallback(() => {
     fetch("/api/game")
@@ -65,15 +83,45 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
       .then((res) => res.json())
       .then((data) => setPlan(data?.plan || null))
       .catch(() => setPlan(null))
+    const loadRank = () =>
+      fetch("/api/leaderboard")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => setMe((data?.entries as LeaderboardEntry[] | undefined)?.find((e) => e.isYou) || null))
+        .catch(() => {})
     loadSummary()
-    return onReward(loadSummary)
+    loadRank()
+    return onReward(() => {
+      loadSummary()
+      loadRank()
+    })
   }, [loadSummary])
+
+  // Close the node popover on Escape or a click elsewhere
+  useEffect(() => {
+    if (!openId) return
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpenId(null)
+    const onDown = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest?.("[data-path-node]")) setOpenId(null)
+    }
+    document.addEventListener("keydown", onKey)
+    document.addEventListener("mousedown", onDown)
+    return () => {
+      document.removeEventListener("keydown", onKey)
+      document.removeEventListener("mousedown", onDown)
+    }
+  }, [openId])
 
   const units = useMemo(() => (plan ? buildUnits(domains, plan.tracks) : []), [domains, plan])
   const ordered = useMemo(() => units.flatMap((u) => u.topics), [units])
   const isDone = (id: string) => progressState[id] === "COMPLETED"
   const currentId = ordered.find((t) => !isDone(t.id))?.id || null
-  const selected = ordered.find((t) => t.id === (selectedId || currentId)) || null
+  const currentTopic = ordered.find((t) => t.id === currentId) || null
+
+  const jumpToCurrent = () => {
+    if (!currentId) return
+    document.getElementById(`node-${currentId}`)?.scrollIntoView({ behavior: "smooth", block: "center" })
+    setOpenId(currentId)
+  }
   const doneCount = ordered.filter((t) => isDone(t.id)).length
 
   const setDailyGoal = (dailyGoal: number) => {
@@ -111,36 +159,41 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
   return (
     <div className="flex flex-col lg:flex-row gap-6 items-start">
       {/* ---------- path ---------- */}
-      <section className="flex-1 min-w-0 w-full" aria-label="Learning path">
-        <div className="flex items-center justify-between mb-5">
+      <section ref={pathRef} className="flex-1 min-w-0 w-full" aria-label="Learning path">
+        <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
           <div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Your Learning Path</h1>
             <p className="text-sm text-zinc-400 mt-0.5">
               {doneCount} of {ordered.length} topics · {plan.tracks.join(" + ")}
             </p>
           </div>
+          {currentTopic && (
+            <button
+              onClick={jumpToCurrent}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-black text-xs font-bold shadow"
+            >
+              <ArrowDown className="w-3.5 h-3.5" /> Continue: {currentTopic.title}
+            </button>
+          )}
         </div>
 
         <div className="space-y-8">
           {units.map((unit) => {
-            const unitColor = unit.compulsory ? COMPULSORY_COLOR : null
-            const unitDone = unit.topics.filter((t) => isDone(t.id)).length
+                    const unitDone = unit.topics.filter((t) => isDone(t.id)).length
             return (
               <div key={unit.id}>
                 <div
-                  className={`rounded-2xl px-5 py-4 border flex items-center justify-between gap-4 ${
-                    unitColor ? unitColor.card : "bg-[#121316] border-zinc-800/80"
-                  }`}
+                  className={`sticky top-[72px] z-30 rounded-2xl px-5 py-4 flex items-center justify-between gap-4 text-white shadow-lg border-b-4 border-black/25 ${unit.banner}`}
                 >
                   <div className="min-w-0">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 flex items-center gap-1.5">
-                      {unit.compulsory && <Star className="w-3 h-3 text-blue-400" />}
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-white/80 flex items-center gap-1.5">
+                      {unit.compulsory && <Star className="w-3 h-3 fill-current" />}
                       {unit.compulsory ? "Compulsory" : "Career track"}
                     </p>
-                    <h2 className="text-base font-bold text-white mt-0.5">{unit.title}</h2>
-                    <p className="text-xs text-zinc-400 line-clamp-1">{unit.subtitle}</p>
+                    <h2 className="text-base sm:text-lg font-extrabold mt-0.5">{unit.title}</h2>
+                    <p className="text-xs text-white/80 line-clamp-1">{unit.subtitle}</p>
                   </div>
-                  <span className="text-xs font-semibold text-zinc-300 shrink-0">
+                  <span className="shrink-0 text-xs font-bold bg-black/20 rounded-lg px-2.5 py-1">
                     {unitDone}/{unit.topics.length}
                   </span>
                 </div>
@@ -152,14 +205,20 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
                     const current = topic.id === currentId
                     const track = topicTrack(topic.roles, plan.tracks)
                     const color = unit.compulsory ? COMPULSORY_COLOR.bar : trackColor(track || "ALL").bar
-                    const isSelected = selected?.id === topic.id
+                    const isOpen = openId === topic.id
                     return (
-                      <li key={topic.id} style={{ transform: `translateX(${OFFSETS[index % OFFSETS.length]}px)` }}>
+                      <li
+                        key={topic.id}
+                        id={`node-${topic.id}`}
+                        data-path-node
+                        className={`relative scroll-mt-40 ${isOpen ? "z-20" : ""}`}
+                        style={{ transform: `translateX(${OFFSETS[index % OFFSETS.length]}px)` }}
+                      >
                         <button
                           type="button"
-                          onClick={() => setSelectedId(topic.id)}
+                          onClick={() => setOpenId(isOpen ? null : topic.id)}
                           aria-label={`${topic.title}${done ? ", completed" : current ? ", up next" : ""}`}
-                          aria-pressed={isSelected}
+                          aria-expanded={isOpen}
                           className="relative flex flex-col items-center group"
                         >
                           {current && (
@@ -174,7 +233,7 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
                                 : current
                                 ? `${color} border-black/30 text-white node-current`
                                 : "bg-zinc-800 border-zinc-900 text-zinc-500"
-                            } ${isSelected ? "ring-4 ring-white/30" : ""}`}
+                            } ${isOpen ? "ring-4 ring-white/30" : ""}`}
                           >
                             {done ? (
                               <Check className="w-7 h-7 stroke-[3]" />
@@ -192,6 +251,59 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
                             {topic.title}
                           </span>
                         </button>
+
+                        {isOpen && (
+                          <div
+                            role="dialog"
+                            aria-label={topic.title}
+                            className="reward-pop absolute left-1/2 -translate-x-1/2 top-full mt-3 w-72 rounded-2xl bg-[#18191d] border border-zinc-700 shadow-2xl p-4"
+                          >
+                            <span
+                              className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 bg-[#18191d] border-l border-t border-zinc-700"
+                              aria-hidden="true"
+                            />
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400">
+                                {unit.compulsory ? "Compulsory" : track || "Career track"} · Topic {index + 1} of {ordered.length}
+                              </p>
+                              <button
+                                onClick={() => setOpenId(null)}
+                                aria-label="Close"
+                                className="text-zinc-500 hover:text-white -mt-1 -mr-1 p-1"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <h3 className="text-base font-bold text-white mt-1 leading-snug">{topic.title}</h3>
+                            <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{topic.description}</p>
+                            <div className="mt-3 flex flex-col gap-2">
+                              {done ? (
+                                <button
+                                  onClick={() => onSetTopicCompleted(topic.id, false)}
+                                  className="w-full px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 text-zinc-200 border border-zinc-700 hover:bg-zinc-700 flex items-center justify-center gap-1.5"
+                                >
+                                  <Undo2 className="w-3.5 h-3.5" /> Mark as not done
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    onSetTopicCompleted(topic.id, true)
+                                    setOpenId(null)
+                                  }}
+                                  className="w-full px-3 py-2.5 rounded-xl text-sm font-extrabold uppercase tracking-wide bg-emerald-500 hover:bg-emerald-400 text-black border-b-4 border-emerald-700 active:border-b-0 active:translate-y-0.5 flex items-center justify-center gap-1.5"
+                                >
+                                  <Check className="w-4 h-4 stroke-[3]" /> I studied this +{XP_RULES.topic} XP
+                                </button>
+                              )}
+                              <button
+                                onClick={() => onOpenNotes(topic)}
+                                className="w-full px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800/80 text-zinc-200 border border-zinc-700/60 hover:bg-zinc-700 flex items-center justify-center gap-1.5"
+                              >
+                                <FileText className="w-3.5 h-3.5" /> Notes · first note +{XP_RULES.note} XP
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </li>
                     )
                   })}
@@ -203,47 +315,26 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
       </section>
 
       {/* ---------- sidebar ---------- */}
-      <aside className="w-full lg:w-80 shrink-0 lg:sticky lg:top-24 space-y-4">
-        {selected && (
-          <div className="bg-[#121316] border border-zinc-800/80 rounded-2xl p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
-              {selected.roles.includes("Everyone") ? "Compulsory topic" : "Career track topic"}
-            </p>
-            <h3 className="text-lg font-bold text-white mt-1 leading-snug">{selected.title}</h3>
-            <p className="text-xs text-zinc-400 mt-1.5 leading-relaxed">{selected.description}</p>
-            <div className="mt-4 flex flex-col gap-2">
-              {isDone(selected.id) ? (
-                <button
-                  onClick={() => onSetTopicCompleted(selected.id, false)}
-                  className="w-full px-3 py-2 rounded-lg text-xs font-semibold bg-zinc-800 text-zinc-200 border border-zinc-700 hover:bg-zinc-700 flex items-center justify-center gap-1.5"
-                >
-                  <Undo2 className="w-3.5 h-3.5" /> Mark as not done
-                </button>
-              ) : (
-                <button
-                  onClick={() => onSetTopicCompleted(selected.id, true)}
-                  className="w-full px-3 py-2.5 rounded-lg text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-black flex items-center justify-center gap-1.5"
-                >
-                  <Check className="w-4 h-4 stroke-[3]" /> I studied this · +{XP_RULES.topic} XP
-                </button>
-              )}
-              <button
-                onClick={() => onOpenNotes(selected)}
-                className="w-full px-3 py-2 rounded-lg text-xs font-semibold bg-zinc-800/80 text-zinc-200 border border-zinc-700/60 hover:bg-zinc-700 flex items-center justify-center gap-1.5"
-              >
-                <FileText className="w-3.5 h-3.5" /> Open notes · first note +{XP_RULES.note} XP
-              </button>
-              {selectedId && selectedId !== currentId && currentId && (
-                <button
-                  onClick={() => setSelectedId(null)}
-                  className="text-[11px] text-zinc-500 hover:text-zinc-300 flex items-center justify-center gap-1"
-                >
-                  <RotateCcw className="w-3 h-3" /> Back to next topic
-                </button>
-              )}
-            </div>
+      <aside className="w-full lg:w-80 shrink-0 lg:sticky lg:top-24 space-y-4" aria-label="Progress">
+        <div className="bg-[#121316] border border-zinc-800/80 rounded-2xl p-5 flex items-center gap-4">
+          <span className="w-12 h-12 rounded-xl bg-amber-950/50 border border-amber-700/60 flex items-center justify-center shrink-0">
+            <Trophy className="w-6 h-6 text-amber-400" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-zinc-400">This week</p>
+            {me && me.weekXp > 0 ? (
+              <>
+                <p className="text-sm font-bold text-white">You&apos;re ranked #{me.rank}</p>
+                <p className="text-xs text-zinc-400">{me.weekXp} XP earned since Monday</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-bold text-white">Join this week&apos;s leaderboard</p>
+                <p className="text-xs text-zinc-400">Finish a topic to earn your first XP</p>
+              </>
+            )}
           </div>
-        )}
+        </div>
 
         {summary && (
           <div className="bg-[#121316] border border-zinc-800/80 rounded-2xl p-5 space-y-4">

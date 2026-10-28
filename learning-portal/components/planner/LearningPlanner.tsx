@@ -607,12 +607,14 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
             })}
             {/* "Studied everything" only helps when more than one thing is still open */}
             {pendingCount > 1 && selPendingXp > 0 && (
-              <button
-                onClick={finishDay}
-                className="w-full mt-1 py-3 rounded-xl text-sm font-extrabold uppercase tracking-wide bg-emerald-500 hover:bg-emerald-400 text-black border-b-4 border-emerald-700 active:border-b-0 active:translate-y-0.5 flex items-center justify-center gap-2"
-              >
-                <CheckCircle2 className="w-4 h-4" /> I studied everything +{selPendingXp} XP
-              </button>
+              <div className="flex justify-end pt-1">
+                <button
+                  onClick={finishDay}
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-black border-b-4 border-emerald-700 active:border-b-0 active:translate-y-0.5 flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Mark all done +{selPendingXp} XP
+                </button>
+              </div>
             )}
           </div>
         )}

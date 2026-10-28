@@ -463,9 +463,10 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
                         style={{ transform: `translateX(${OFFSETS[stepIndex % OFFSETS.length]}px)` }}
                       >
                         {step.firstOfDay && (
+                          // Beside the loop on wide screens, above the pair on narrow ones
                           <span
-                            className={`mb-9 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md ${
-                              isToday ? "bg-white text-black" : "bg-[#0a0a0c] text-zinc-500"
+                            className={`mb-9 md:mb-0 md:absolute md:left-full md:ml-[92px] md:top-8 md:-translate-y-1/2 whitespace-nowrap text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md ${
+                              isToday ? "bg-white text-black" : "bg-[#0a0a0c] text-zinc-400 border border-zinc-800"
                             }`}
                           >
                             {isToday ? "Today" : `Day ${step.day}`} · {dateLabel(step.date)}

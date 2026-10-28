@@ -11,6 +11,7 @@ export interface TrackColor {
   banner: string // solid unit banner, dark enough for white text
   stroke: string // SVG stroke (progress ring)
   edge: string // thick bottom edge of a selected 3D tile
+  edgeSoft: string // quiet bottom edge for large cards
 }
 
 export const TRACK_COLORS: Record<string, TrackColor> = {
@@ -24,6 +25,7 @@ export const TRACK_COLORS: Record<string, TrackColor> = {
     banner: "bg-rose-700",
     stroke: "stroke-rose-400",
     edge: "border-b-rose-700",
+    edgeSoft: "border-b-rose-500/40",
   },
   Consultant: {
     text: "text-amber-400",
@@ -35,6 +37,7 @@ export const TRACK_COLORS: Record<string, TrackColor> = {
     banner: "bg-amber-700",
     stroke: "stroke-amber-400",
     edge: "border-b-amber-700",
+    edgeSoft: "border-b-amber-500/40",
   },
   "Service Designer": {
     text: "text-violet-400",
@@ -46,6 +49,7 @@ export const TRACK_COLORS: Record<string, TrackColor> = {
     banner: "bg-violet-700",
     stroke: "stroke-violet-400",
     edge: "border-b-violet-700",
+    edgeSoft: "border-b-violet-500/40",
   },
   "AI PM": {
     text: "text-emerald-400",
@@ -57,6 +61,7 @@ export const TRACK_COLORS: Record<string, TrackColor> = {
     banner: "bg-emerald-700",
     stroke: "stroke-emerald-400",
     edge: "border-b-emerald-700",
+    edgeSoft: "border-b-emerald-500/40",
   },
   Engineer: {
     text: "text-sky-400",
@@ -68,6 +73,7 @@ export const TRACK_COLORS: Record<string, TrackColor> = {
     banner: "bg-sky-700",
     stroke: "stroke-sky-400",
     edge: "border-b-sky-700",
+    edgeSoft: "border-b-sky-500/40",
   },
 }
 

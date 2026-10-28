@@ -369,7 +369,7 @@ export default function RolePathwaysView({
               return (
                 <div
                   key={domain.id}
-                  className={`rounded-2xl overflow-hidden bg-[#121316] border-2 border-b-[5px] ${activeColor.card.split(" ")[0]} ${activeColor.edge}`}
+                  className={`rounded-2xl overflow-hidden bg-[#121316] border border-zinc-800/80 border-b-4 ${activeColor.edgeSoft}`}
                 >
                   {/* Unit banner */}
                   <div

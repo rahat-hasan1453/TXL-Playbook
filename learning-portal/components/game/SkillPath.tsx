@@ -288,10 +288,10 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
                                   <span
                                     className={`w-16 h-16 rounded-full flex items-center justify-center border-b-4 transition-transform group-hover:-translate-y-0.5 ${
                                       done
-                                        ? "bg-emerald-500 border-emerald-700 text-white"
+                                        ? "bg-emerald-500 border-emerald-700 text-white on-solid"
                                         : current
-                                        ? `${color} border-black/30 text-white node-current`
-                                        : `${color} border-black/30 text-white opacity-35`
+                                        ? `${color} border-black/30 text-white on-solid node-current`
+                                        : `${color} border-black/30 text-white on-solid opacity-35`
                                     } ${isOpen ? "ring-4 ring-white/30" : ""}`}
                                   >
                                     {done ? (

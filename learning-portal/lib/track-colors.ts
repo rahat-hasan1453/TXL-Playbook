@@ -9,6 +9,8 @@ export interface TrackColor {
   dot: string
   planCard: string // calendar card
   banner: string // solid unit banner, dark enough for white text
+  stroke: string // SVG stroke (progress ring)
+  edge: string // thick bottom edge of a selected 3D tile
 }
 
 export const TRACK_COLORS: Record<string, TrackColor> = {
@@ -20,6 +22,8 @@ export const TRACK_COLORS: Record<string, TrackColor> = {
     dot: "bg-rose-500",
     planCard: "bg-rose-950/30 border-rose-800/50",
     banner: "bg-rose-700",
+    stroke: "stroke-rose-400",
+    edge: "border-b-rose-700",
   },
   Consultant: {
     text: "text-amber-400",
@@ -29,6 +33,8 @@ export const TRACK_COLORS: Record<string, TrackColor> = {
     dot: "bg-amber-500",
     planCard: "bg-amber-950/30 border-amber-800/50",
     banner: "bg-amber-700",
+    stroke: "stroke-amber-400",
+    edge: "border-b-amber-700",
   },
   "Service Designer": {
     text: "text-violet-400",
@@ -38,6 +44,8 @@ export const TRACK_COLORS: Record<string, TrackColor> = {
     dot: "bg-violet-500",
     planCard: "bg-violet-950/30 border-violet-800/50",
     banner: "bg-violet-700",
+    stroke: "stroke-violet-400",
+    edge: "border-b-violet-700",
   },
   "AI PM": {
     text: "text-emerald-400",
@@ -47,6 +55,8 @@ export const TRACK_COLORS: Record<string, TrackColor> = {
     dot: "bg-emerald-500",
     planCard: "bg-emerald-950/30 border-emerald-800/50",
     banner: "bg-emerald-700",
+    stroke: "stroke-emerald-400",
+    edge: "border-b-emerald-700",
   },
   Engineer: {
     text: "text-sky-400",
@@ -56,6 +66,8 @@ export const TRACK_COLORS: Record<string, TrackColor> = {
     dot: "bg-sky-500",
     planCard: "bg-sky-950/30 border-sky-800/50",
     banner: "bg-sky-700",
+    stroke: "stroke-sky-400",
+    edge: "border-b-sky-700",
   },
 }
 

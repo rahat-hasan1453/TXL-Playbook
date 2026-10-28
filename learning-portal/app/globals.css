@@ -412,3 +412,7 @@ html.light .note-content hr { border-color: #d4d4d8; }
 .node-current { animation: node-pulse 1.8s ease-in-out infinite; }
 html.light .text-orange-400 { color: #ea580c !important; }
 html.light .bg-\[\#18191d\] { background-color: #ffffff !important; }
+html.light .fill-white { fill: #18181b !important; }
+html.light .stroke-zinc-800 { stroke: #e4e4e7 !important; }
+/* White text on solid colour fills stays white in light mode (keep last) */
+html.light .on-solid, html.light .on-solid * { color: #ffffff !important; }

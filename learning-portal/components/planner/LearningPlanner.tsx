@@ -542,7 +542,7 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
                   className="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 border-b-4 bg-[#0e0f12]"
                 >
                   <span
-                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white ${
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white on-solid ${
                       done ? "bg-emerald-500" : itemColor(item)
                     }`}
                   >
@@ -578,7 +578,7 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
               return (
                 <div key={goal.id} className="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 border-b-4 bg-[#0e0f12]">
                   <span
-                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white ${done ? "bg-emerald-500" : "bg-amber-600"}`}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white on-solid ${done ? "bg-emerald-500" : "bg-amber-600"}`}
                   >
                     {done ? <Check className="w-5 h-5 stroke-[3]" /> : <Target className="w-5 h-5" />}
                   </span>

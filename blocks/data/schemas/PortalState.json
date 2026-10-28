@@ -1,0 +1,18 @@
+{
+  "schemaName": "PortalState",
+  "collectionName": "blx_PortalStates",
+  "schemaType": 1,
+  "fields": [
+    {
+      "name": "key",
+      "type": "String",
+      "isArray": false,
+      "isUniqueData": true
+    },
+    {
+      "name": "value",
+      "type": "String",
+      "isArray": false
+    }
+  ]
+}

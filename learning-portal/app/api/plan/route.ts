@@ -77,7 +77,7 @@ function isValidTimezone(tz: string) {
 export async function GET() {
   const auth = await requireLearner()
   if ("error" in auth) return auth.error
-  return NextResponse.json({ plan: getPlan(auth.email) })
+  return NextResponse.json({ plan: await getPlan(auth.email) })
 }
 
 // Create or regenerate the plan from the wizard settings
@@ -94,11 +94,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unknown timezone" }, { status: 400 })
   }
 
-  const progress = getLearnerProgress(auth.email)
+  const progress = await getLearnerProgress(auth.email)
   const completed = new Set(Object.keys(progress).filter((id) => progress[id] === "COMPLETED"))
   const tracks = Array.from(new Set(settings.tracks))
   const now = new Date().toISOString()
-  const existing = getPlan(auth.email)
+  const existing = await getPlan(auth.email)
 
   const plan: LearningPlan = {
     email: auth.email,
@@ -112,21 +112,21 @@ export async function POST(req: Request) {
     })),
     reminderTime: settings.reminderTime,
     timezone: settings.timezone,
-    items: buildSchedule(loadCurriculumFromDisk(), { ...settings, tracks }, completed),
+    items: buildSchedule(await loadCurriculumFromDisk(), { ...settings, tracks }, completed),
     goalChecks: existing?.goalChecks || {},
     lastReminderDate: existing?.lastReminderDate,
     createdAt: existing?.createdAt || now,
     updatedAt: now,
   }
 
-  return NextResponse.json({ plan: savePlan(plan) })
+  return NextResponse.json({ plan: await savePlan(plan) })
 }
 
 export async function PATCH(req: Request) {
   const auth = await requireLearner()
   if ("error" in auth) return auth.error
 
-  const plan = getPlan(auth.email)
+  const plan = await getPlan(auth.email)
   if (!plan) return NextResponse.json({ error: "No plan yet" }, { status: 404 })
 
   const parsed = patchSchema.safeParse(await req.json().catch(() => null))
@@ -161,12 +161,12 @@ export async function PATCH(req: Request) {
     plan.timezone = body.timezone
   }
 
-  return NextResponse.json({ plan: savePlan(plan) })
+  return NextResponse.json({ plan: await savePlan(plan) })
 }
 
 export async function DELETE() {
   const auth = await requireLearner()
   if ("error" in auth) return auth.error
-  deletePlan(auth.email)
+  await deletePlan(auth.email)
   return NextResponse.json({ success: true })
 }

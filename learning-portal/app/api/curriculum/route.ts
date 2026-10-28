@@ -4,7 +4,7 @@ import { loadCurriculumFromDisk, saveCurriculumToDisk } from "@/lib/curriculum-s
 import { getServerSession } from "@/lib/auth"
 
 export async function GET() {
-  const domains = loadCurriculumFromDisk()
+  const domains = await loadCurriculumFromDisk()
   return NextResponse.json({
     domains,
     totalDomains: domains.length,
@@ -29,7 +29,7 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "Invalid domains payload" }, { status: 400 })
   }
 
-  saveCurriculumToDisk(domains)
+  await saveCurriculumToDisk(domains)
 
   return NextResponse.json({
     success: true,

@@ -1,123 +1,87 @@
-import fs from "fs"
-import path from "path"
-import { PodLearner } from "@/components/UnitHeadManagementView"
+import type { PodLearner } from "@/components/UnitHeadManagementView"
+import { kvGetJson, kvListJson, kvMode, kvSetJson } from "@/lib/kv"
 
-const DATA_DIR = path.join(process.cwd(), ".data")
-const DATA_FILE = path.join(DATA_DIR, "learner-progress.json")
+// One record per learner: progress per topic plus personal notes.
+const PREFIX = "learner:"
+const keyFor = (email: string) => `${PREFIX}${email.toLowerCase().trim()}`
 
-interface StoredLearnersMap {
-  [email: string]: PodLearner
-}
+// Local development starts with two demo learners
+const DEMO_LEARNERS: PodLearner[] = [
+  {
+    id: "learner-akash",
+    name: "Nico Paz",
+    email: "rahat.akash1453@gmail.com",
+    role: "Cloud Systems Engineer",
+    avatar: "NP",
+    progress: { "biz-1": "COMPLETED" },
+    notes: {},
+  },
+  {
+    id: "learner-enzo",
+    name: "Enzo Farnendes",
+    email: "rahat.hasan1453@gmail.com",
+    role: "Product Engineer",
+    avatar: "EF",
+    progress: {},
+    notes: {},
+  },
+]
 
-// In-memory cache
-let learnersCache: StoredLearnersMap | null = null
-
-function ensureDataFile(): StoredLearnersMap {
-  if (learnersCache) return learnersCache
-
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true })
-    }
-
-    if (fs.existsSync(DATA_FILE)) {
-      const content = fs.readFileSync(DATA_FILE, "utf-8")
-      learnersCache = JSON.parse(content)
-      return learnersCache!
-    }
-  } catch (err) {
-    console.warn("Failed to read progress store file, using fallback cache:", err)
-  }
-
-  // Initial seed with active platform learners
-  learnersCache = {
-    "rahat.akash1453@gmail.com": {
-      id: "learner-akash",
-      name: "Nico Paz",
-      email: "rahat.akash1453@gmail.com",
-      role: "Cloud Systems Engineer",
-      avatar: "NP",
-      progress: {
-        "biz-1": "COMPLETED", // Business Model Canvas from screenshot
-      },
-      notes: {},
-    },
-    "rahat.hasan1453@gmail.com": {
-      id: "learner-enzo",
-      name: "Enzo Farnendes",
-      email: "rahat.hasan1453@gmail.com",
-      role: "Product Engineer",
-      avatar: "EF",
-      progress: {},
-      notes: {},
-    },
-  }
-
-  saveDataFile(learnersCache)
-  return learnersCache
-}
-
-function saveDataFile(data: StoredLearnersMap) {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true })
-    }
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8")
-  } catch (err) {
-    console.warn("Failed to write to progress store file:", err)
+let seeded = false
+async function seedDemoLearners() {
+  if (seeded || kvMode() !== "file") return
+  seeded = true
+  for (const learner of DEMO_LEARNERS) {
+    if (!(await kvGetJson(keyFor(learner.email)))) await kvSetJson(keyFor(learner.email), learner)
   }
 }
 
-/**
- * Gets or creates learner record
- */
-export function getOrCreateLearner(
+/** Gets or creates a learner record. */
+export async function getOrCreateLearner(
   email: string,
   name?: string,
   role?: string,
   avatar?: string,
   userId?: string
-): PodLearner {
-  const data = ensureDataFile()
+): Promise<PodLearner> {
+  await seedDemoLearners()
   const key = email.toLowerCase().trim()
+  const existing = await kvGetJson<PodLearner>(keyFor(key))
 
-  if (!data[key]) {
-    const derivedName = name || email.split("@")[0]
-    const derivedAvatar =
-      avatar ||
-      derivedName
-        .split(" ")
-        .map((s) => s[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2) ||
-      "LN"
-
-    data[key] = {
+  if (!existing) {
+    const derivedName = name || key.split("@")[0]
+    const created: PodLearner = {
       id: userId || `learner-${Date.now()}`,
       name: derivedName,
       email: key,
       role: role || "Cloud Systems Engineer",
-      avatar: derivedAvatar,
+      avatar:
+        avatar ||
+        derivedName
+          .split(" ")
+          .map((s) => s[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2) ||
+        "LN",
       progress: {},
       notes: {},
     }
-    saveDataFile(data)
-  } else {
-    // Update name/role if provided
-    if (name && data[key].name !== name) data[key].name = name
-    if (role && data[key].role !== role) data[key].role = role
-    if (avatar && data[key].avatar !== avatar) data[key].avatar = avatar
-    saveDataFile(data)
+    await kvSetJson(keyFor(key), created)
+    return created
   }
 
-  return data[key]
+  // Keep display details current, writing only when something changed
+  let changed = false
+  if (name && existing.name !== name) (existing.name = name), (changed = true)
+  if (role && existing.role !== role) (existing.role = role), (changed = true)
+  if (avatar && existing.avatar !== avatar) (existing.avatar = avatar), (changed = true)
+  if (changed) await kvSetJson(keyFor(key), existing)
+  return existing
 }
 
-/**
- * Updates a topic's progress for a specific learner
- */
-export function updateLearnerTopicProgress(
+/** Updates a topic's progress for a learner. */
+export async function updateLearnerTopicProgress(
   email: string,
   topicId: string,
   status: "COMPLETED" | "IN_PROGRESS" | "NOT_STARTED",
@@ -125,65 +89,33 @@ export function updateLearnerTopicProgress(
   role?: string,
   avatar?: string,
   userId?: string
-): PodLearner {
-  const learner = getOrCreateLearner(email, name, role, avatar, userId)
-  const data = ensureDataFile()
-  const key = email.toLowerCase().trim()
-
-  if (status === "NOT_STARTED") {
-    delete learner.progress[topicId]
-  } else {
-    learner.progress[topicId] = status
-  }
-
-  data[key] = learner
-  saveDataFile(data)
+): Promise<PodLearner> {
+  const learner = await getOrCreateLearner(email, name, role, avatar, userId)
+  if (status === "NOT_STARTED") delete learner.progress[topicId]
+  else learner.progress[topicId] = status
+  await kvSetJson(keyFor(email), learner)
   return learner
 }
 
-/**
- * Saves a personal note for a learner on a topic
- */
-export function saveLearnerTopicNote(
-  email: string,
-  topicId: string,
-  content: string
-): PodLearner {
-  const learner = getOrCreateLearner(email)
-  const data = ensureDataFile()
-  const key = email.toLowerCase().trim()
-
-  if (!content.trim()) {
-    delete learner.notes[topicId]
-  } else {
-    learner.notes[topicId] = content.trim()
-  }
-
-  data[key] = learner
-  saveDataFile(data)
+/** Saves (or clears) a learner's personal note on a topic. */
+export async function saveLearnerTopicNote(email: string, topicId: string, content: string): Promise<PodLearner> {
+  const learner = await getOrCreateLearner(email)
+  if (!content.trim()) delete learner.notes[topicId]
+  else learner.notes[topicId] = content.trim()
+  await kvSetJson(keyFor(email), learner)
   return learner
 }
 
-/**
- * Returns all registered learners with their progress for Unit Head view
- */
-export function getAllLearners(): PodLearner[] {
-  const data = ensureDataFile()
-  return Object.values(data)
+/** All registered learners with their progress, for the Unit Head view. */
+export async function getAllLearners(): Promise<PodLearner[]> {
+  await seedDemoLearners()
+  return kvListJson<PodLearner>(PREFIX)
 }
 
-/**
- * Returns learner progress record for active session
- */
-export function getLearnerProgress(email: string): Record<string, "COMPLETED" | "IN_PROGRESS"> {
-  const learner = getOrCreateLearner(email)
-  return learner.progress || {}
+export async function getLearnerProgress(email: string): Promise<Record<string, "COMPLETED" | "IN_PROGRESS">> {
+  return (await getOrCreateLearner(email)).progress || {}
 }
 
-/**
- * Returns notes record for active session
- */
-export function getLearnerNotes(email: string): Record<string, string> {
-  const learner = getOrCreateLearner(email)
-  return learner.notes || {}
+export async function getLearnerNotes(email: string): Promise<Record<string, string>> {
+  return (await getOrCreateLearner(email)).notes || {}
 }

@@ -34,3 +34,6 @@ yarn-error.log*
 # Local reminder secrets and sent-mail log
 .data/.reminder-secret
 .data/reminder-outbox.json
+
+# Local key-value store (dev)
+.data/kv.json

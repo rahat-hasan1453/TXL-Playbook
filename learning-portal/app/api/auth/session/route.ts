@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { getServerSession, setSessionCookies, SESSION_COOKIE_NAMES, UserRole } from '@/lib/auth'
 import { memoryStore } from '@/lib/prisma'
-import { resolveUserBlocksRole } from '@/lib/blocks-auth'
+import { lookupSyncedRole } from '@/lib/blocks-auth'
 
 export async function GET() {
   const session = await getServerSession()
@@ -18,11 +18,11 @@ export async function GET() {
 
   // Check if user has been assigned an updated role in memoryStore
   const storeRole =
-    memoryStore.userRoles.get(session.user.id) ||
-    memoryStore.userRoles.get(email)
+    memoryStore.userRoles.get(email) ||
+    memoryStore.userRoles.get(session.user.id)
 
   // Live synchronization with Blocks IAM role assignment
-  const blocksRole = await resolveUserBlocksRole(email)
+  const blocksRole = await lookupSyncedRole(email)
 
   // Direct synchronization: Blocks IAM role takes highest authority
   const resolvedRole: UserRole = blocksRole || storeRole || currentRole

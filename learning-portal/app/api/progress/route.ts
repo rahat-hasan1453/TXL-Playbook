@@ -28,7 +28,7 @@ export async function GET() {
 
   // Ensure current user is registered in learner store
   if (!isUnitHead) {
-    getOrCreateLearner(
+    await getOrCreateLearner(
       email,
       session.user.name,
       session.user.discipline,
@@ -39,7 +39,7 @@ export async function GET() {
 
   if (isUnitHead) {
     // Unit Head gets the live cross-pod learners roster and progress
-    const learners = getAllLearners()
+    const learners = await getAllLearners()
     return NextResponse.json({
       role: "UNIT_HEAD",
       learners,
@@ -47,8 +47,8 @@ export async function GET() {
   }
 
   // Learner gets their own progress and notes
-  const progress = getLearnerProgress(email)
-  const notes = getLearnerNotes(email)
+  const progress = await getLearnerProgress(email)
+  const notes = await getLearnerNotes(email)
 
   return NextResponse.json({
     role: "LEARNER",
@@ -73,7 +73,7 @@ export async function PATCH(req: Request) {
   const email = session.user.email.toLowerCase()
 
   // Update server persistent progress store
-  const updatedLearner = updateLearnerTopicProgress(
+  const updatedLearner = await updateLearnerTopicProgress(
     email,
     topicId,
     status,
@@ -84,7 +84,7 @@ export async function PATCH(req: Request) {
   )
 
   if (note !== undefined) {
-    saveLearnerTopicNote(email, topicId, note)
+    await saveLearnerTopicNote(email, topicId, note)
   }
 
   // Best effort sync with Blocks Data Gateway collection

@@ -7,6 +7,7 @@ import {
   resolveUserBlocksRole,
   decodeJwtPayload,
   extractRoles,
+  fetchRolesWithToken,
   isLeadershipRole,
 } from '@/lib/blocks-auth'
 
@@ -120,6 +121,7 @@ export async function POST(req: Request) {
       if (r) extractedRoles.push(...extractRoles(r))
     }
 
+    extractedRoles.push(...(await fetchRolesWithToken(accessToken)))
     const tokenIsHead = isLeadershipRole(extractedRoles, email)
     const role: UserRole = (tokenIsHead || blocksIamRole === 'UNIT_HEAD' || isUnitHead) ? 'UNIT_HEAD' : 'LEARNER'
 

@@ -7,6 +7,7 @@ import { loadCurriculumFromDisk } from "@/lib/curriculum-store"
 import { CustomGoal, LearningPlan, PlanItem, goalsOn, localParts } from "@/lib/learning-plan"
 import { getPlan, getAllPlans, savePlan } from "@/lib/plan-store"
 import { getAllLearners, getLearnerProgress } from "@/lib/progress-store"
+import { serviceClient, serviceConfigured } from "@/lib/blocks-service"
 import { createReminderToken } from "@/lib/reminder-token"
 
 const execFileAsync = promisify(execFile)
@@ -23,14 +24,14 @@ export interface DayDigest {
   missedCount: number
 }
 
-function topicIndex(): Map<string, Topic> {
-  return new Map(loadCurriculumFromDisk().flatMap((d) => d.topics.map((t) => [t.id, t] as const)))
+async function topicIndex(): Promise<Map<string, Topic>> {
+  return new Map((await loadCurriculumFromDisk()).flatMap((d) => d.topics.map((t) => [t.id, t] as const)))
 }
 
 /** Everything the learner was meant to do on `date`, with what is already done. */
-export function buildDayDigest(plan: LearningPlan, date: string): DayDigest {
-  const progress = getLearnerProgress(plan.email)
-  const topics = topicIndex()
+export async function buildDayDigest(plan: LearningPlan, date: string): Promise<DayDigest> {
+  const progress = await getLearnerProgress(plan.email)
+  const topics = await topicIndex()
   const checked = new Set(plan.goalChecks[date] || [])
   return {
     date,
@@ -63,8 +64,8 @@ function formatDateLabel(date: string): string {
   })
 }
 
-function learnerName(email: string): string {
-  const learner = getAllLearners().find((l) => l.email === email)
+async function learnerName(email: string): Promise<string> {
+  const learner = (await getAllLearners()).find((l) => l.email === email)
   return learner?.name || email.split("@")[0]
 }
 
@@ -88,6 +89,17 @@ function recordOutbox(entry: OutboxEntry) {
 }
 
 async function sendViaBlocksMail(to: string, context: Record<string, string>) {
+  // Hosted deployments have no CLI, so they send through the SDK as the service user
+  if (serviceConfigured()) {
+    await serviceClient.mail.send({
+      to: [to],
+      purpose: REMINDER_MAIL_PURPOSE,
+      language: "en-US",
+      subjectDataContext: context,
+      bodyDataContext: context,
+    })
+    return
+  }
   const env = {
     ...process.env,
     PATH: [process.env.PATH || "", `${process.env.HOME}/.npm-global/bin`, "/usr/local/bin", "/opt/homebrew/bin"].join(":"),
@@ -115,7 +127,7 @@ export type SendResult =
 
 /** Sends the reminder for one learner and one day. */
 export async function sendDailyReminder(plan: LearningPlan, date: string): Promise<SendResult> {
-  const digest = buildDayDigest(plan, date)
+  const digest = await buildDayDigest(plan, date)
   const pendingTopics = digest.topics.filter((t) => !t.completed)
   const pendingGoals = digest.goals.filter((g) => !g.done)
   if (!pendingTopics.length && !pendingGoals.length) return { status: "nothing-due" }
@@ -126,7 +138,7 @@ export async function sendDailyReminder(plan: LearningPlan, date: string): Promi
     ...pendingGoals.map((g) => `${g.goal.title} (Personal goal)`),
   ]
   const context: Record<string, string> = {
-    "Reminder.Name": learnerName(plan.email),
+    "Reminder.Name": await learnerName(plan.email),
     "Reminder.DateLabel": formatDateLabel(date),
     "Reminder.Count": String(lines.length),
     "Reminder.Items": lines.join("  ·  "),
@@ -163,7 +175,7 @@ export async function runDueReminders(now: Date = new Date()) {
   runInFlight = true
   let sent = 0
   try {
-    for (const plan of getAllPlans()) {
+    for (const plan of await getAllPlans()) {
       const local = localParts(plan.timezone, now)
       if (local.date < plan.startDate || local.date > plan.endDate) continue
       if (local.time < plan.reminderTime || plan.lastReminderDate === local.date) continue
@@ -177,8 +189,8 @@ export async function runDueReminders(now: Date = new Date()) {
       }
       lastFailureAt.delete(plan.email)
       // Re-read so a learner's edits made while the mail was sending aren't overwritten
-      const latest = getPlan(plan.email)
-      if (latest) savePlan({ ...latest, lastReminderDate: local.date })
+      const latest = await getPlan(plan.email)
+      if (latest) await savePlan({ ...latest, lastReminderDate: local.date })
       if (result.status !== "nothing-due") sent++
     }
   } finally {

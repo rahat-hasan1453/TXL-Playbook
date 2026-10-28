@@ -21,10 +21,10 @@ export async function POST(req: Request) {
 
   const claims = verifyReminderToken(body.token, todayIn("UTC"))
   if (!claims) return NextResponse.json({ error: "This link has expired" }, { status: 401 })
-  const plan = getPlan(claims.email)
+  const plan = await getPlan(claims.email)
   if (!plan) return NextResponse.json({ error: "Plan not found" }, { status: 404 })
 
-  const digest = buildDayDigest(plan, claims.date)
+  const digest = await buildDayDigest(plan, claims.date)
   const setTopic = (topicId: string, done: boolean) =>
     updateLearnerTopicProgress(plan.email, topicId, done ? "COMPLETED" : "NOT_STARTED")
   const setGoal = (goalId: string, done: boolean) => {
@@ -39,17 +39,18 @@ export async function POST(req: Request) {
     if (!digest.topics.some((t) => t.topic.id === body.topicId)) {
       return NextResponse.json({ error: "That topic is no longer scheduled for this day" }, { status: 404 })
     }
-    setTopic(body.topicId, body.done)
+    await setTopic(body.topicId, body.done)
   } else if (body.action === "goal") {
     if (!digest.goals.some((g) => g.goal.id === body.goalId)) {
       return NextResponse.json({ error: "That goal is not scheduled for this day" }, { status: 404 })
     }
     setGoal(body.goalId, body.done)
   } else {
-    digest.topics.forEach((t) => setTopic(t.topic.id, true))
-    digest.goals.forEach((g) => setGoal(g.goal.id, true))
+    for (const t of digest.topics) await setTopic(t.topic.id, true)
+    for (const g of digest.goals) setGoal(g.goal.id, true)
   }
 
-  savePlan(plan)
-  return NextResponse.json({ digest: buildDayDigest(getPlan(claims.email)!, claims.date) })
+  await savePlan(plan)
+  const latest = (await getPlan(claims.email)) || plan
+  return NextResponse.json({ digest: await buildDayDigest(latest, claims.date) })
 }

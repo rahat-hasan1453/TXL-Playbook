@@ -4,6 +4,7 @@ import { blocksClient } from "@/lib/blocks"
 import {
   decodeJwtPayload,
   extractRoles,
+  fetchRolesWithToken,
   isLeadershipRole,
   resolveUserBlocksRole,
 } from "@/lib/blocks-auth"
@@ -99,6 +100,8 @@ export async function POST(request: NextRequest) {
     for (const cand of candidateRoles) {
       if (cand) extractedRoles.push(...extractRoles(cand))
     }
+
+    extractedRoles.push(...(await fetchRolesWithToken(accessToken)))
 
     // Check with live Blocks CLI synchronization as well
     const blocksSyncedRole = await resolveUserBlocksRole(userEmail)

@@ -3,7 +3,7 @@ import { getServerSession } from "@/lib/auth"
 import { getSharedFeed, addSharedLearning, likeSharedLearning } from "@/lib/feed-store"
 
 export async function GET() {
-  const feed = getSharedFeed()
+  const feed = await getSharedFeed()
   return NextResponse.json({ feed })
 }
 
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Note content is required" }, { status: 400 })
   }
 
-  const item = addSharedLearning({
+  const item = await addSharedLearning({
     userName: session.user.name,
     userRole: session.user.discipline,
     topicTitle: topicTitle || "Curriculum Competency",
@@ -44,7 +44,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Item ID is required" }, { status: 400 })
   }
 
-  const updated = likeSharedLearning(id)
+  const updated = await likeSharedLearning(id)
   if (!updated) {
     return NextResponse.json({ error: "Item not found" }, { status: 404 })
   }

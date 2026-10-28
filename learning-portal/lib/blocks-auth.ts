@@ -2,6 +2,8 @@ import { exec } from "child_process"
 import { promisify } from "util"
 import { UserRole } from "@/lib/auth"
 import { memoryStore } from "@/lib/prisma"
+import { createBlocksClient } from "@seliseblocks/client"
+import { blocksConfig } from "@/lib/blocks"
 
 const execAsync = promisify(exec)
 
@@ -200,4 +202,36 @@ export async function resolveUserBlocksRole(email: string): Promise<UserRole> {
   }
 
   return "LEARNER"
+}
+
+/**
+ * Role Blocks IAM is known to have assigned, or null when it can't be told
+ * (for example where the blocks CLI isn't installed). Callers keep the signed
+ * session role in that case instead of guessing.
+ */
+export async function lookupSyncedRole(email: string): Promise<UserRole | null> {
+  await syncBlocksRolesFromCli()
+  return blocksRoleCache.get(email.toLowerCase().trim()) ?? null
+}
+
+/**
+ * Reads the signed-in user's own roles from Blocks IAM using their access token.
+ * Works anywhere (no CLI), so it is the source of truth on hosted deployments.
+ */
+export async function fetchRolesWithToken(accessToken?: string): Promise<string[]> {
+  if (!accessToken) return []
+  try {
+    const client = createBlocksClient({
+      apiUrl: blocksConfig.apiUrl,
+      appDomain: blocksConfig.appDomain,
+      xBlocksKey: blocksConfig.xBlocksKey,
+      accessToken,
+    })
+    const me = (await client.iam.me()) as Record<string, unknown>
+    const user = (me.data as Record<string, unknown> | undefined) || me
+    return extractRoles(user.roles)
+  } catch (err) {
+    console.warn("Blocks iam.me role lookup failed:", err instanceof Error ? err.message : err)
+    return []
+  }
 }

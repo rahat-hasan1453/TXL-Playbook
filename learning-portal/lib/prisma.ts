@@ -69,8 +69,10 @@ function loadUsersFromDisk(): Map<string, StoredUser> {
     },
   ]
 
+  // Known demo passwords must never exist on a public deployment
+  const seedDemoUsers = process.env.NODE_ENV !== "production"
   let hasNew = false
-  for (const du of defaultUsers) {
+  for (const du of seedDemoUsers ? defaultUsers : []) {
     if (!map.has(du.email.toLowerCase())) {
       map.set(du.email.toLowerCase(), du)
       hasNew = true

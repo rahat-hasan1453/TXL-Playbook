@@ -16,7 +16,7 @@ export default async function ReminderPage({
   const { token } = await params
   const { all } = await searchParams
   const claims = verifyReminderToken(token, todayIn("UTC"))
-  const plan = claims ? getPlan(claims.email) : null
+  const plan = claims ? await getPlan(claims.email) : null
 
   if (!claims || !plan) {
     return (
@@ -35,5 +35,5 @@ export default async function ReminderPage({
     )
   }
 
-  return <ReminderChecklist token={token} initialDigest={buildDayDigest(plan, claims.date)} highlightAll={all === "1"} />
+  return <ReminderChecklist token={token} initialDigest={await buildDayDigest(plan, claims.date)} highlightAll={all === "1"} />
 }

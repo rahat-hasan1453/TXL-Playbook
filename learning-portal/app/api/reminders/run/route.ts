@@ -14,6 +14,12 @@ function hasCronSecret(req: Request): boolean {
   return given.length === expected.length && crypto.timingSafeEqual(given, expected)
 }
 
+// Vercel Cron calls this with GET and "Authorization: Bearer <CRON_SECRET>"
+export async function GET(req: Request) {
+  if (!hasCronSecret(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  return NextResponse.json(await runDueReminders())
+}
+
 /**
  * External cron: sends every reminder that is due (Authorization: Bearer <CRON_SECRET>).
  * Signed-in learner: sends today's reminder to themselves right now, for testing.
@@ -27,7 +33,7 @@ export async function POST(req: Request) {
   if (!session.user || session.user.role !== "LEARNER") {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
   }
-  const plan = getPlan(session.user.email)
+  const plan = await getPlan(session.user.email)
   if (!plan) return NextResponse.json({ error: "Create a learning plan first" }, { status: 404 })
 
   const result = await sendDailyReminder(plan, todayIn(plan.timezone))

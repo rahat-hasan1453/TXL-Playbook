@@ -4,6 +4,7 @@ import { getServerSession } from "@/lib/auth"
 import { loadCurriculumFromDisk } from "@/lib/curriculum-store"
 import { getLearnerProgress } from "@/lib/progress-store"
 import { deletePlan, getPlan, savePlan } from "@/lib/plan-store"
+import { awardXp } from "@/lib/game-store"
 import {
   LearningPlan,
   MAX_TRACKS,
@@ -161,7 +162,12 @@ export async function PATCH(req: Request) {
     plan.timezone = body.timezone
   }
 
-  return NextResponse.json({ plan: await savePlan(plan) })
+  const saved = await savePlan(plan)
+  const reward =
+    body.action === "toggleGoal" && body.done
+      ? await awardXp(auth.email, "goal", `${body.goalId}:${body.date}`)
+      : null
+  return NextResponse.json({ plan: saved, reward })
 }
 
 export async function DELETE() {

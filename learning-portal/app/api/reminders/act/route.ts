@@ -5,6 +5,7 @@ import { getPlan, savePlan } from "@/lib/plan-store"
 import { updateLearnerTopicProgress } from "@/lib/progress-store"
 import { buildDayDigest } from "@/lib/reminders"
 import { verifyReminderToken } from "@/lib/reminder-token"
+import { awardXp } from "@/lib/game-store"
 
 const actSchema = z.discriminatedUnion("action", [
   z.object({ token: z.string(), action: z.literal("topic"), topicId: z.string(), done: z.boolean() }),
@@ -25,9 +26,13 @@ export async function POST(req: Request) {
   if (!plan) return NextResponse.json({ error: "Plan not found" }, { status: 404 })
 
   const digest = await buildDayDigest(plan, claims.date)
-  const setTopic = (topicId: string, done: boolean) =>
-    updateLearnerTopicProgress(plan.email, topicId, done ? "COMPLETED" : "NOT_STARTED")
+  const setTopic = async (topicId: string, done: boolean) => {
+    await updateLearnerTopicProgress(plan.email, topicId, done ? "COMPLETED" : "NOT_STARTED")
+    if (done) await awardXp(plan.email, "topic", topicId)
+  }
+  const goalAwards: string[] = []
   const setGoal = (goalId: string, done: boolean) => {
+    if (done) goalAwards.push(goalId)
     const checked = new Set(plan.goalChecks[claims.date] || [])
     if (done) checked.add(goalId)
     else checked.delete(goalId)
@@ -51,6 +56,7 @@ export async function POST(req: Request) {
   }
 
   await savePlan(plan)
+  for (const goalId of goalAwards) await awardXp(plan.email, "goal", `${goalId}:${claims.date}`)
   const latest = (await getPlan(claims.email)) || plan
   return NextResponse.json({ digest: await buildDayDigest(latest, claims.date) })
 }

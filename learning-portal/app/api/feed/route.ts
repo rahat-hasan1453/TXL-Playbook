@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "@/lib/auth"
 import { getSharedFeed, addSharedLearning, likeSharedLearning } from "@/lib/feed-store"
+import { awardXp } from "@/lib/game-store"
 
 export async function GET() {
   const feed = await getSharedFeed()
@@ -28,7 +29,12 @@ export async function POST(req: Request) {
     note: note.trim(),
   })
 
-  return NextResponse.json({ success: true, item })
+  const reward =
+    session.user.role === "LEARNER"
+      ? await awardXp(session.user.email, "share", item.id, { name: session.user.name, avatar: session.user.avatar })
+      : null
+
+  return NextResponse.json({ success: true, item, reward })
 }
 
 export async function PATCH(req: Request) {

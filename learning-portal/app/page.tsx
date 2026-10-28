@@ -34,7 +34,11 @@ import {
 } from "lucide-react"
 import RolePathwaysView, { ROLE_TRACKS } from "@/components/RolePathwaysView"
 import UnitHeadManagementView from "@/components/UnitHeadManagementView"
-import LearningPlanner from "@/components/planner/LearningPlanner"
+import LearningHub from "@/components/game/LearningHub"
+import GameChip from "@/components/game/GameChip"
+import RewardToaster from "@/components/game/RewardToaster"
+import Leaderboard from "@/components/game/Leaderboard"
+import { announceReward } from "@/lib/reward-events"
 import ThemeToggle from "@/components/ThemeToggle"
 import RichNoteEditor, { NoteViewer } from "@/components/NotesEditor"
 import { isNoteEmpty, noteToPlainText } from "@/lib/note-content"
@@ -252,7 +256,10 @@ export default function TXLLearningPortal() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ topicId, status: nextStatus }),
-    }).catch((err) => console.warn("Failed to sync progress to server:", err))
+    })
+      .then((res) => res.json())
+      .then((data) => announceReward(data?.reward))
+      .catch((err) => console.warn("Failed to sync progress to server:", err))
   }
 
   // Set a topic's completion directly (planner cards and reminder checklist)
@@ -267,7 +274,10 @@ export default function TXLLearningPortal() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ topicId, status: completed ? "COMPLETED" : "NOT_STARTED" }),
-    }).catch((err) => console.warn("Failed to sync progress to server:", err))
+    })
+      .then((res) => res.json())
+      .then((data) => announceReward(data?.reward))
+      .catch((err) => console.warn("Failed to sync progress to server:", err))
   }
 
   // Notes autosave while typing; the modal's Done button flushes any pending save
@@ -291,7 +301,11 @@ export default function TXLLearningPortal() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ topicId, status, note: content }),
     })
-      .then(() => setNoteSaveState("saved"))
+      .then((res) => res.json())
+      .then((data) => {
+        setNoteSaveState("saved")
+        announceReward(data?.reward)
+      })
       .catch((err) => {
         setNoteSaveState("idle")
         console.warn("Failed to sync note to server:", err)
@@ -372,6 +386,7 @@ export default function TXLLearningPortal() {
           body: JSON.stringify(payload),
         })
         const data = await res.json()
+        announceReward(data?.reward)
         if (data?.item) {
           setSharedLearnings((prev) => [data.item, ...prev.filter((i) => i.id !== tempId)])
         }
@@ -454,6 +469,7 @@ export default function TXLLearningPortal() {
           {/* Right: User Profile Card */}
           <div className="flex items-center gap-2">
           <ThemeToggle />
+          {currentUserRole === "LEARNER" && <GameChip onClick={() => setActiveTab("my-plan")} />}
           {currentUserRole === "LEARNER" && (
             <button
               onClick={() => setActiveTab(activeTab === "my-plan" ? "what-to-learn" : "my-plan")}
@@ -648,7 +664,13 @@ export default function TXLLearningPortal() {
             currentLearnerProgress={progressState}
             currentLearnerNotes={userNotes}
           />
-        ) : (
+        ) : null}
+        {currentUserRole === "UNIT_HEAD" && (
+          <div className="mt-6">
+            <Leaderboard />
+          </div>
+        )}
+        {currentUserRole === "UNIT_HEAD" ? null : (
           /* ================= LEARNER WORKSPACE ================= */
           <>
             {/* ================= PRIMARY VIEW: WHAT TO LEARN (ROLE TRACKS) ================= */}
@@ -669,7 +691,7 @@ export default function TXLLearningPortal() {
 
         {/* ================= LEARNING PLANNER ================= */}
         {activeTab === "my-plan" && (
-          <LearningPlanner
+          <LearningHub
             domains={domains}
             progressState={progressState}
             onSetTopicCompleted={handleSetTopicCompleted}
@@ -947,6 +969,7 @@ export default function TXLLearningPortal() {
           </div>
         </div>
       )}
+      {currentUserRole === "LEARNER" && <RewardToaster />}
     </div>
   )
 }

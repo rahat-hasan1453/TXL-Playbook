@@ -10,6 +10,8 @@ import {
   getOrCreateLearner,
 } from "@/lib/progress-store"
 import { learnerProgressCollection } from "@/lib/blocks"
+import { awardXp, mergeRewards } from "@/lib/game-store"
+import { isNoteEmpty } from "@/lib/note-content"
 
 const updateProgressSchema = z.object({
   topicId: z.string(),
@@ -100,9 +102,20 @@ export async function PATCH(req: Request) {
     // Ignore Data Gateway offline error
   }
 
+  // Learners earn XP; each topic and each topic's first note pays out once
+  let reward = null
+  if (session.user.role === "LEARNER") {
+    const profile = { name: session.user.name, avatar: session.user.avatar }
+    reward = mergeRewards([
+      status === "COMPLETED" ? await awardXp(email, "topic", topicId, profile) : null,
+      note !== undefined && !isNoteEmpty(note) ? await awardXp(email, "note", topicId, profile) : null,
+    ])
+  }
+
   return NextResponse.json({
     success: true,
     progress: updatedLearner.progress,
     notes: updatedLearner.notes,
+    reward,
   })
 }

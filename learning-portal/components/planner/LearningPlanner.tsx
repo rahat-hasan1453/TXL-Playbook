@@ -26,6 +26,7 @@ import {
   weekdayOf,
 } from "@/lib/learning-plan"
 import PlanWizard from "./PlanWizard"
+import { announceReward } from "@/lib/reward-events"
 import { COMPULSORY_COLOR, TRACK_COLORS, topicTrack, trackColor } from "@/lib/track-colors"
 
 interface LearningPlannerProps {
@@ -122,6 +123,7 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
     const data = await res.json()
     if (!res.ok) throw new Error(data?.error || "Could not update plan")
     setPlan(data.plan)
+    announceReward(data.reward)
   }
 
   const handleSubmitSettings = async (settings: PlanSettings) => {

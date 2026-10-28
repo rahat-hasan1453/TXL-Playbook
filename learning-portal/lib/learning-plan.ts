@@ -156,9 +156,10 @@ function spread(count: number, dayCount: number): number[] {
 }
 
 /**
- * Builds the day-by-day schedule: compulsory topics and career-track topics are each
- * spread evenly over the plan, so a typical day holds one compulsory topic and one
- * track topic. Topics already completed are left out.
+ * Builds the day-by-day schedule as pairs: the i-th compulsory topic goes with the i-th
+ * career-track topic, so each step holds one of each (once compulsory topics run out,
+ * steps carry a track topic alone). Steps are spread evenly over the plan's days.
+ * Topics already completed are left out.
  */
 export function buildSchedule(
   domains: Domain[],
@@ -172,14 +173,14 @@ export function buildSchedule(
     (t) => !completedTopicIds.has(t.id) && !compulsoryIds.has(t.id)
   )
 
+  const steps = Math.max(compulsory.length, track.length)
   const items: PlanItem[] = []
-  spread(compulsory.length, days.length).forEach((dayIdx, i) => {
-    items.push({ id: `pi-${compulsory[i].id}`, topicId: compulsory[i].id, date: days[dayIdx], kind: "COMPULSORY" })
+  spread(steps, days.length).forEach((dayIdx, i) => {
+    const date = days[dayIdx]
+    if (compulsory[i]) items.push({ id: `pi-${compulsory[i].id}`, topicId: compulsory[i].id, date, kind: "COMPULSORY" })
+    if (track[i]) items.push({ id: `pi-${track[i].id}`, topicId: track[i].id, date, kind: "TRACK" })
   })
-  spread(track.length, days.length).forEach((dayIdx, i) => {
-    items.push({ id: `pi-${track[i].id}`, topicId: track[i].id, date: days[dayIdx], kind: "TRACK" })
-  })
-  return items.sort((a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind))
+  return items
 }
 
 /** Custom goals that fall on a given date. */

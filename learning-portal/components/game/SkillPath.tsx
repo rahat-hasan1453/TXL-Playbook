@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ArrowDown, Check, FileText, Play, Star, Target, Trophy, Undo2, X } from "lucide-react"
 import type { Domain, Topic } from "@/lib/curriculumData"
 import { DAILY_GOAL_OPTIONS, GameSummary, LeaderboardEntry, XP_RULES } from "@/lib/gamification"
-import { LearningPlan, compulsoryTopics } from "@/lib/learning-plan"
+import { LearningPlan, todayIn } from "@/lib/learning-plan"
 import { COMPULSORY_COLOR, topicTrack, trackColor } from "@/lib/track-colors"
 import { onReward } from "@/lib/reward-events"
 
@@ -16,52 +16,76 @@ interface SkillPathProps {
   onCreatePlan: () => void
 }
 
-interface PathUnit {
-  id: string
-  title: string
-  subtitle: string
-  compulsory: boolean
-  topics: Topic[]
-  banner: string
+interface PathNode {
+  topic: Topic
+  kind: "COMPULSORY" | "TRACK"
+  track: string | null
+}
+
+interface PathStep {
+  key: string
+  date: string
+  day: number // 1-based day of the plan
+  firstOfDay: boolean
+  nodes: PathNode[] // one compulsory + one career-track topic
+}
+
+interface PathWeek {
+  week: number
+  steps: PathStep[]
 }
 
 // Gentle zig-zag, Duolingo style
 const OFFSETS = [0, 44, 72, 44, 0, -44, -72, -44]
 
-function buildUnits(domains: Domain[], tracks: string[]): PathUnit[] {
-  const compulsory = compulsoryTopics(domains)
-  const compulsoryIds = new Set(compulsory.map((t) => t.id))
-  const units: PathUnit[] = [
-    {
-      id: "unit-compulsory",
-      title: "Foundations",
-      subtitle: "Compulsory for every role",
-      compulsory: true,
-      topics: compulsory,
-      banner: COMPULSORY_COLOR.banner,
-    },
-  ]
-  for (const domain of domains) {
-    const topics = domain.topics.filter((t) => !compulsoryIds.has(t.id) && tracks.some((tr) => t.roles.includes(tr)))
-    if (topics.length) {
-      // The unit takes the colour of the chosen track most of its topics belong to
-      const counts = new Map<string, number>()
-      topics.forEach((t) => {
-        const tr = topicTrack(t.roles, tracks)
-        if (tr) counts.set(tr, (counts.get(tr) || 0) + 1)
-      })
-      const main = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "ALL"
-      units.push({
-        id: `unit-${domain.id}`,
-        title: domain.name,
-        subtitle: domain.focus,
-        compulsory: false,
-        topics,
-        banner: trackColor(main).banner,
+/**
+ * The path follows the plan's own schedule: each day is one step holding that day's
+ * compulsory topic and career-track topic side by side, grouped into weeks.
+ */
+function buildWeeks(plan: LearningPlan, topicsById: Map<string, Topic>): PathWeek[] {
+  const byDate = new Map<string, PathNode[]>()
+  for (const item of plan.items) {
+    const topic = topicsById.get(item.topicId)
+    if (!topic) continue
+    const nodes = byDate.get(item.date) || []
+    nodes.push({ topic, kind: item.kind, track: topicTrack(topic.roles, plan.tracks) })
+    byDate.set(item.date, nodes)
+  }
+  const dates = [...byDate.keys()].sort()
+  const start = plan.startDate
+  const weeks: PathWeek[] = []
+  for (const date of dates) {
+    const day = Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86_400_000) + 1
+    const week = Math.max(1, Math.ceil(day / 7))
+    const nodes = byDate.get(date)!
+    // Pair the day's compulsory and track topics: one of each per step
+    const comp = nodes.filter((n) => n.kind === "COMPULSORY")
+    const trk = nodes.filter((n) => n.kind === "TRACK")
+    let bucket = weeks[weeks.length - 1]
+    if (!bucket || bucket.week !== week) {
+      bucket = { week, steps: [] }
+      weeks.push(bucket)
+    }
+    for (let i = 0; i < Math.max(comp.length, trk.length); i++) {
+      bucket.steps.push({
+        key: `${date}-${i}`,
+        date,
+        day,
+        firstOfDay: i === 0,
+        nodes: [comp[i], trk[i]].filter((n): n is PathNode => !!n),
       })
     }
   }
-  return units
+  return weeks
+}
+
+function dateLabel(date: string) {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", {
+    timeZone: "UTC",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  })
 }
 
 export default function SkillPath({ domains, progressState, onSetTopicCompleted, onOpenNotes, onCreatePlan }: SkillPathProps) {
@@ -111,8 +135,12 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
     }
   }, [openId])
 
-  const units = useMemo(() => (plan ? buildUnits(domains, plan.tracks) : []), [domains, plan])
-  const ordered = useMemo(() => units.flatMap((u) => u.topics), [units])
+  const topicsById = useMemo(
+    () => new Map(domains.flatMap((d) => d.topics.map((t) => [t.id, t] as const))),
+    [domains]
+  )
+  const weeks = useMemo(() => (plan ? buildWeeks(plan, topicsById) : []), [plan, topicsById])
+  const ordered = useMemo(() => weeks.flatMap((w) => w.steps.flatMap((st) => st.nodes.map((n) => n.topic))), [weeks])
   const isDone = (id: string) => progressState[id] === "COMPLETED"
   const currentId = ordered.find((t) => !isDone(t.id))?.id || null
   const currentTopic = ordered.find((t) => t.id === currentId) || null
@@ -153,7 +181,8 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
     )
   }
 
-  let index = -1
+  let stepIndex = -1
+  const today = todayIn(plan.timezone)
   const goalPct = summary ? Math.min(100, Math.round((summary.todayXp / summary.dailyGoal) * 100)) : 0
 
   return (
@@ -178,132 +207,166 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
         </div>
 
         <div className="space-y-8">
-          {units.map((unit) => {
-                    const unitDone = unit.topics.filter((t) => isDone(t.id)).length
+          {weeks.map((week) => {
+            const weekTopics = week.steps.flatMap((st) => st.nodes)
+            const weekDone = weekTopics.filter((n) => isDone(n.topic.id)).length
             return (
-              <div key={unit.id}>
-                <div
-                  className={`sticky top-[72px] z-30 rounded-2xl px-5 py-4 flex items-center justify-between gap-4 text-white shadow-lg border-b-4 border-black/25 ${unit.banner}`}
-                >
+              <div key={week.week}>
+                <div className="sticky top-[72px] z-30 rounded-2xl px-5 py-4 flex items-center justify-between gap-4 bg-[#18191d] border border-zinc-700 border-b-4 shadow-lg">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-white/80 flex items-center gap-1.5">
-                      {unit.compulsory && <Star className="w-3 h-3 fill-current" />}
-                      {unit.compulsory ? "Compulsory" : "Career track"}
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-zinc-400">
+                      {dateLabel(week.steps[0].date)} – {dateLabel(week.steps[week.steps.length - 1].date)}
                     </p>
-                    <h2 className="text-base sm:text-lg font-extrabold mt-0.5">{unit.title}</h2>
-                    <p className="text-xs text-white/80 line-clamp-1">{unit.subtitle}</p>
+                    <h2 className="text-base sm:text-lg font-extrabold text-white mt-0.5">Week {week.week}</h2>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] text-zinc-400">
+                      <span className="flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full ${COMPULSORY_COLOR.bar}`} /> Compulsory
+                      </span>
+                      {plan.tracks.map((t) => (
+                        <span key={t} className="flex items-center gap-1.5">
+                          <span className={`w-2 h-2 rounded-full ${trackColor(t).dot}`} /> {t}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <span className="shrink-0 text-xs font-bold bg-black/20 rounded-lg px-2.5 py-1">
-                    {unitDone}/{unit.topics.length}
+                  <span className="shrink-0 text-xs font-bold text-zinc-200 bg-zinc-800 rounded-lg px-2.5 py-1">
+                    {weekDone}/{weekTopics.length}
                   </span>
                 </div>
 
-                <ol className="flex flex-col items-center gap-10 py-8">
-                  {unit.topics.map((topic) => {
-                    index++
-                    const done = isDone(topic.id)
-                    const current = topic.id === currentId
-                    const track = topicTrack(topic.roles, plan.tracks)
-                    const color = unit.compulsory ? COMPULSORY_COLOR.bar : trackColor(track || "ALL").bar
-                    const isOpen = openId === topic.id
+                <ol className="flex flex-col items-center gap-12 py-10">
+                  {week.steps.map((step) => {
+                    stepIndex++
+                    const isToday = step.date === today
                     return (
                       <li
-                        key={topic.id}
-                        id={`node-${topic.id}`}
-                        data-path-node
-                        className={`relative scroll-mt-40 ${isOpen ? "z-20" : ""}`}
-                        style={{ transform: `translateX(${OFFSETS[index % OFFSETS.length]}px)` }}
+                        key={step.key}
+                        className="relative flex flex-col items-center"
+                        style={{ transform: `translateX(${OFFSETS[stepIndex % OFFSETS.length]}px)` }}
                       >
-                        <button
-                          type="button"
-                          onClick={() => setOpenId(isOpen ? null : topic.id)}
-                          aria-label={`${topic.title}${done ? ", completed" : current ? ", up next" : ""}`}
-                          aria-expanded={isOpen}
-                          className="relative flex flex-col items-center group"
-                        >
-                          {current && (
-                            <span className="absolute -top-8 whitespace-nowrap text-[10px] font-extrabold uppercase tracking-wide bg-amber-400 text-black px-2 py-1 rounded-lg">
-                              Start
-                            </span>
-                          )}
+                        {step.firstOfDay && (
                           <span
-                            className={`w-16 h-16 rounded-full flex items-center justify-center border-b-4 transition-transform group-hover:-translate-y-0.5 ${
-                              done
-                                ? "bg-emerald-500 border-emerald-700 text-white"
-                                : current
-                                ? `${color} border-black/30 text-white node-current`
-                                : "bg-zinc-800 border-zinc-900 text-zinc-500"
-                            } ${isOpen ? "ring-4 ring-white/30" : ""}`}
-                          >
-                            {done ? (
-                              <Check className="w-7 h-7 stroke-[3]" />
-                            ) : current ? (
-                              <Play className="w-6 h-6 fill-current" />
-                            ) : (
-                              <span className="text-sm font-bold">{index + 1}</span>
-                            )}
-                          </span>
-                          <span
-                            className={`mt-2 max-w-[160px] text-center text-[11px] font-semibold leading-tight ${
-                              done ? "text-zinc-400" : current ? "text-white" : "text-zinc-500"
+                            className={`mb-9 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md ${
+                              isToday ? "bg-white text-black" : "text-zinc-500"
                             }`}
                           >
-                            {topic.title}
+                            {isToday ? "Today" : `Day ${step.day}`} · {dateLabel(step.date)}
                           </span>
-                        </button>
-
-                        {isOpen && (
-                          <div
-                            role="dialog"
-                            aria-label={topic.title}
-                            className="reward-pop absolute left-1/2 -translate-x-1/2 top-full mt-3 w-72 rounded-2xl bg-[#18191d] border border-zinc-700 shadow-2xl p-4"
-                          >
-                            <span
-                              className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 bg-[#18191d] border-l border-t border-zinc-700"
-                              aria-hidden="true"
-                            />
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400">
-                                {unit.compulsory ? "Compulsory" : track || "Career track"} · Topic {index + 1} of {ordered.length}
-                              </p>
-                              <button
-                                onClick={() => setOpenId(null)}
-                                aria-label="Close"
-                                className="text-zinc-500 hover:text-white -mt-1 -mr-1 p-1"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                            <h3 className="text-base font-bold text-white mt-1 leading-snug">{topic.title}</h3>
-                            <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{topic.description}</p>
-                            <div className="mt-3 flex flex-col gap-2">
-                              {done ? (
-                                <button
-                                  onClick={() => onSetTopicCompleted(topic.id, false)}
-                                  className="w-full px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 text-zinc-200 border border-zinc-700 hover:bg-zinc-700 flex items-center justify-center gap-1.5"
-                                >
-                                  <Undo2 className="w-3.5 h-3.5" /> Mark as not done
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => {
-                                    onSetTopicCompleted(topic.id, true)
-                                    setOpenId(null)
-                                  }}
-                                  className="w-full px-3 py-2.5 rounded-xl text-sm font-extrabold uppercase tracking-wide bg-emerald-500 hover:bg-emerald-400 text-black border-b-4 border-emerald-700 active:border-b-0 active:translate-y-0.5 flex items-center justify-center gap-1.5"
-                                >
-                                  <Check className="w-4 h-4 stroke-[3]" /> I studied this +{XP_RULES.topic} XP
-                                </button>
-                              )}
-                              <button
-                                onClick={() => onOpenNotes(topic)}
-                                className="w-full px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800/80 text-zinc-200 border border-zinc-700/60 hover:bg-zinc-700 flex items-center justify-center gap-1.5"
-                              >
-                                <FileText className="w-3.5 h-3.5" /> Notes · first note +{XP_RULES.note} XP
-                              </button>
-                            </div>
-                          </div>
                         )}
+                        <div className="flex items-start gap-6">
+                          {step.nodes.map((node) => {
+                            const topic = node.topic
+                            const done = isDone(topic.id)
+                            const current = topic.id === currentId
+                            const color = node.kind === "COMPULSORY" ? COMPULSORY_COLOR.bar : trackColor(node.track || "ALL").bar
+                            const position = ordered.findIndex((t) => t.id === topic.id) + 1
+                            const isOpen = openId === topic.id
+                            return (
+                              <div
+                                key={topic.id}
+                                id={`node-${topic.id}`}
+                                data-path-node
+                                className={`relative w-[120px] flex justify-center scroll-mt-40 ${isOpen ? "z-20" : ""}`}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setOpenId(isOpen ? null : topic.id)}
+                                  aria-label={`${topic.title}, ${node.kind === "COMPULSORY" ? "compulsory" : node.track || "career track"}${
+                                    done ? ", completed" : current ? ", up next" : ""
+                                  }`}
+                                  aria-expanded={isOpen}
+                                  className="relative flex flex-col items-center group"
+                                >
+                                  {current && (
+                                    <span className="absolute -top-8 whitespace-nowrap text-[10px] font-extrabold uppercase tracking-wide bg-amber-400 text-black px-2 py-1 rounded-lg">
+                                      Start
+                                    </span>
+                                  )}
+                                  <span
+                                    className={`w-16 h-16 rounded-full flex items-center justify-center border-b-4 transition-transform group-hover:-translate-y-0.5 ${
+                                      done
+                                        ? "bg-emerald-500 border-emerald-700 text-white"
+                                        : current
+                                        ? `${color} border-black/30 text-white node-current`
+                                        : `${color} border-black/30 text-white opacity-35`
+                                    } ${isOpen ? "ring-4 ring-white/30" : ""}`}
+                                  >
+                                    {done ? (
+                                      <Check className="w-7 h-7 stroke-[3]" />
+                                    ) : current ? (
+                                      <Play className="w-6 h-6 fill-current" />
+                                    ) : node.kind === "COMPULSORY" ? (
+                                      <Star className="w-6 h-6" />
+                                    ) : (
+                                      <span className="text-sm font-bold">{position}</span>
+                                    )}
+                                  </span>
+                                  <span
+                                    className={`mt-2 text-center text-[11px] font-semibold leading-tight line-clamp-2 ${
+                                      done ? "text-zinc-400" : current ? "text-white" : "text-zinc-400"
+                                    }`}
+                                  >
+                                    {topic.title}
+                                  </span>
+                                </button>
+
+                                {isOpen && (
+                                  <div
+                                    role="dialog"
+                                    aria-label={topic.title}
+                                    className="reward-pop absolute left-1/2 -translate-x-1/2 top-full mt-3 w-72 rounded-2xl bg-[#18191d] border border-zinc-700 shadow-2xl p-4"
+                                  >
+                                    <span
+                                      className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 bg-[#18191d] border-l border-t border-zinc-700"
+                                      aria-hidden="true"
+                                    />
+                                    <div className="flex items-start justify-between gap-2">
+                                      <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400">
+                                        {node.kind === "COMPULSORY" ? "Compulsory" : node.track || "Career track"} · Topic {position} of{" "}
+                                        {ordered.length}
+                                      </p>
+                                      <button
+                                        onClick={() => setOpenId(null)}
+                                        aria-label="Close"
+                                        className="text-zinc-500 hover:text-white -mt-1 -mr-1 p-1"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                    <h3 className="text-base font-bold text-white mt-1 leading-snug">{topic.title}</h3>
+                                    <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{topic.description}</p>
+                                    <div className="mt-3 flex flex-col gap-2">
+                                      {done ? (
+                                        <button
+                                          onClick={() => onSetTopicCompleted(topic.id, false)}
+                                          className="w-full px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 text-zinc-200 border border-zinc-700 hover:bg-zinc-700 flex items-center justify-center gap-1.5"
+                                        >
+                                          <Undo2 className="w-3.5 h-3.5" /> Mark as not done
+                                        </button>
+                                      ) : (
+                                        <button
+                                          onClick={() => {
+                                            onSetTopicCompleted(topic.id, true)
+                                            setOpenId(null)
+                                          }}
+                                          className="w-full px-3 py-2.5 rounded-xl text-sm font-extrabold uppercase tracking-wide bg-emerald-500 hover:bg-emerald-400 text-black border-b-4 border-emerald-700 active:border-b-0 active:translate-y-0.5 flex items-center justify-center gap-1.5"
+                                        >
+                                          <Check className="w-4 h-4 stroke-[3]" /> I studied this +{XP_RULES.topic} XP
+                                        </button>
+                                      )}
+                                      <button
+                                        onClick={() => onOpenNotes(topic)}
+                                        className="w-full px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800/80 text-zinc-200 border border-zinc-700/60 hover:bg-zinc-700 flex items-center justify-center gap-1.5"
+                                      >
+                                        <FileText className="w-3.5 h-3.5" /> Notes · first note +{XP_RULES.note} XP
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
                       </li>
                     )
                   })}

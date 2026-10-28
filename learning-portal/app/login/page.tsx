@@ -1,5 +1,6 @@
 "use client"
 
+import ThemeToggle from "@/components/ThemeToggle"
 import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
@@ -145,7 +146,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0c] text-zinc-100 flex flex-col justify-between p-4 sm:p-8 font-sans selection:bg-zinc-800 selection:text-white">
+    <div className="min-h-screen bg-[#0a0a0c] text-zinc-100 relative flex flex-col justify-between p-4 sm:p-8 font-sans selection:bg-zinc-800 selection:text-white">
+      <ThemeToggle className="absolute top-4 right-4 sm:top-6 sm:right-6" />
       {/* Top Header */}
       <header className="max-w-5xl w-full mx-auto flex items-center justify-between py-4 border-b border-zinc-800/80">
         <div className="flex items-center space-x-3">

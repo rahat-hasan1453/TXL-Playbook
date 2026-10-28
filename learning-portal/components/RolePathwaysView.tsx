@@ -2,6 +2,8 @@
 
 import React, { useState, useMemo } from "react"
 import { CURRICULUM_DOMAINS, Domain, Topic } from "@/lib/curriculumData"
+import { noteToPlainText } from "@/lib/note-content"
+import { COMPULSORY_COLOR, trackColor } from "@/lib/track-colors"
 import {
   Compass,
   Briefcase,
@@ -20,6 +22,7 @@ import {
   ChevronDown,
   ChevronRight,
   BookOpen,
+  Star,
   X
 } from "lucide-react"
 
@@ -122,6 +125,8 @@ export default function RolePathwaysView({
     }
   }
 
+  const activeColor = trackColor(currentRoleKey)
+
   // Search query inside the role view
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -202,7 +207,11 @@ export default function RolePathwaysView({
 
       return {
         ...domain,
-        topics: visibleTopics,
+        // Compulsory topics first, curriculum order otherwise
+        topics: [...visibleTopics].sort(
+          (a, b) => Number(b.roles.includes("Everyone")) - Number(a.roles.includes("Everyone"))
+        ),
+        compulsoryCount: roleTopics.filter((t) => t.roles.includes("Everyone")).length,
         totalRoleTopics: roleTopics.length,
         completedInDomain,
       }
@@ -233,23 +242,25 @@ export default function RolePathwaysView({
             const isSelected = currentRoleKey === track.key
             const Icon = track.icon
             const count = topicCountsByRole[track.key] || 0
+            const color = trackColor(track.key)
 
             return (
               <button
                 key={track.key}
                 type="button"
+                aria-pressed={isSelected}
                 onClick={() => handleRoleSelect(track.key)}
                 className={`flex items-center justify-between p-3.5 rounded-xl transition-all duration-200 text-left border ${
                   isSelected
-                    ? "bg-[#16181f] border-zinc-400 text-white shadow-md ring-1 ring-zinc-400/30"
+                    ? `bg-[#16181f] text-white shadow-md ${color.card}`
                     : "bg-[#121316] border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-[#16171b]"
                 }`}
               >
                 <div className="flex items-center space-x-3.5 min-w-0">
-                  <div className={`p-1.5 rounded-lg border ${
+                  <div className={`p-1.5 rounded-lg border ${color.text} ${
                     isSelected
-                      ? "bg-zinc-800 border-zinc-600 text-white"
-                      : "bg-[#0e0f12] border-zinc-800 text-zinc-400"
+                      ? "bg-zinc-800 border-zinc-600"
+                      : "bg-[#0e0f12] border-zinc-800"
                   }`}>
                     <Icon className="w-4 h-4" />
                   </div>
@@ -266,7 +277,7 @@ export default function RolePathwaysView({
                 <span
                   className={`text-xs px-2.5 py-0.5 rounded-md font-semibold shrink-0 ml-2 ${
                     isSelected
-                      ? "bg-zinc-800 text-white border border-zinc-600"
+                      ? `border ${color.chip}`
                       : "bg-[#0e0f12] text-zinc-400 border border-zinc-800"
                   }`}
                 >
@@ -283,7 +294,8 @@ export default function RolePathwaysView({
       {/* ========================================================================= */}
       <section className="flex-1 min-w-0 space-y-6 w-full">
         {/* Hero Section: Track Title, Badges (Left) & Track Readiness (Right) */}
-        <div className="bg-[#121316] border border-zinc-800/80 rounded-2xl p-6 sm:p-7 shadow-sm">
+        <div className="relative bg-[#121316] border border-zinc-800/80 rounded-2xl p-6 sm:p-7 shadow-sm overflow-hidden">
+          <div className={`absolute inset-x-0 top-0 h-1 ${activeColor.bar}`} aria-hidden="true" />
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
             {/* Left: Title, Description, Badges */}
             <div className="space-y-3 max-w-xl">
@@ -295,13 +307,13 @@ export default function RolePathwaysView({
               </p>
 
               <div className="pt-2 flex flex-wrap items-center gap-2 text-xs">
-                <span className="flex items-center gap-1.5 bg-[#0e0f12] text-zinc-300 font-medium px-3 py-1.5 rounded-lg border border-zinc-800">
-                  <BookOpen className="w-3.5 h-3.5 text-blue-400" />
-                  {baselineCount} Universal Baseline Topics (Everyone)
+                <span className={`flex items-center gap-1.5 font-medium px-3 py-1.5 rounded-lg border ${COMPULSORY_COLOR.chip}`}>
+                  <Star className="w-3.5 h-3.5" />
+                  {baselineCount} Compulsory Topics (Everyone)
                 </span>
                 {currentRoleKey !== "ALL" && (
-                  <span className="flex items-center gap-1.5 bg-[#0e0f12] text-zinc-300 font-medium px-3 py-1.5 rounded-lg border border-zinc-800">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  <span className={`flex items-center gap-1.5 font-medium px-3 py-1.5 rounded-lg border ${activeColor.chip}`}>
+                    <Sparkles className="w-3.5 h-3.5" />
                     {specialistCount} Specialist Competencies
                   </span>
                 )}
@@ -336,7 +348,7 @@ export default function RolePathwaysView({
                 <div className="w-full bg-zinc-800/80 rounded-full h-1.5 overflow-hidden">
                   <div
                     style={{ width: `${readinessPercentage}%` }}
-                    className="h-full rounded-full bg-blue-500 transition-all duration-300"
+                    className={`h-full rounded-full ${activeColor.bar} transition-all duration-300`}
                   />
                 </div>
 
@@ -354,7 +366,7 @@ export default function RolePathwaysView({
             Showing <span className="font-bold text-white">{allRoleTopics.length}</span> topics for{" "}
             <span className="font-bold text-white">{activeRole.label}</span>
             {currentRoleKey !== "ALL" && (
-              <span className="text-zinc-500"> ({baselineCount} universal baseline + {specialistCount} specialist)</span>
+              <span className="text-zinc-500"> ({baselineCount} compulsory + {specialistCount} specialist)</span>
             )}
           </div>
 
@@ -408,7 +420,16 @@ export default function RolePathwaysView({
                 >
                   {/* Domain Accordion Header */}
                   <div
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={!isCollapsed}
                     onClick={() => toggleDomainCollapse(domain.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        toggleDomainCollapse(domain.id)
+                      }
+                    }}
                     className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-zinc-800/30 transition select-none"
                   >
                     <div className="flex items-center space-x-3.5 min-w-0 pr-4">
@@ -423,6 +444,12 @@ export default function RolePathwaysView({
                           <span className="text-[11px] font-medium text-zinc-400 bg-zinc-800/70 px-2 py-0.5 rounded-md border border-zinc-700/50 shrink-0">
                             {domain.completedInDomain}/{domain.totalRoleTopics} done
                           </span>
+                          {domain.compulsoryCount > 0 && (
+                            <span className={`hidden sm:flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border shrink-0 ${COMPULSORY_COLOR.chip}`}>
+                              <Star className="w-3 h-3" />
+                              {domain.compulsoryCount === domain.totalRoleTopics ? "Compulsory" : `${domain.compulsoryCount} compulsory`}
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-zinc-400 mt-0.5 line-clamp-1">{domain.focus}</p>
                       </div>
@@ -433,7 +460,7 @@ export default function RolePathwaysView({
                         <div className="w-20 sm:w-28 bg-zinc-800 rounded-full h-1.5 overflow-hidden">
                           <div
                             style={{ width: `${domainPct}%` }}
-                            className="h-full rounded-full bg-blue-500 transition-all duration-300"
+                            className={`h-full rounded-full ${activeColor.bar} transition-all duration-300`}
                           />
                         </div>
                         <span className="text-xs font-semibold text-zinc-400 w-8 text-right">
@@ -460,27 +487,35 @@ export default function RolePathwaysView({
                           const isInProgress = status === "IN_PROGRESS"
                           const hasNote = !!userNotes[topic.id]
                           const isBaseline = topic.roles.includes("Everyone")
+                          const ownTrack =
+                            currentRoleKey !== "ALL" && topic.roles.includes(currentRoleKey)
+                              ? currentRoleKey
+                              : topic.roles.find((r) => r !== "Everyone") || "ALL"
+                          const railColor = isBaseline ? COMPULSORY_COLOR.bar : trackColor(ownTrack).bar
 
                           return (
                             <div
                               key={topic.id}
-                              className={`p-4 sm:p-5 rounded-xl border transition-all flex flex-col justify-between ${
+                              className={`relative overflow-hidden p-4 sm:p-5 pl-5 sm:pl-6 rounded-xl border transition-all flex flex-col justify-between ${
                                 isCompleted
                                   ? "bg-[#121316] border-emerald-500/40"
                                   : isInProgress
                                   ? "bg-[#121316] border-blue-500/40"
+                                  : isBaseline
+                                  ? `${COMPULSORY_COLOR.card} hover:border-blue-600/70`
                                   : "bg-[#121316] border-zinc-800/80 hover:border-zinc-700"
                               }`}
                             >
+                              <span className={`absolute left-0 inset-y-0 w-1.5 ${railColor}`} aria-hidden="true" />
                               <div>
                                 {/* Header Tags: Baseline or Specialist + Roles */}
                                 <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
                                   {isBaseline ? (
-                                    <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-800/90 text-zinc-300 border border-zinc-700/60 font-medium">
-                                      Baseline
+                                    <span className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border font-semibold ${COMPULSORY_COLOR.chip}`}>
+                                      <Star className="w-2.5 h-2.5" /> Compulsory
                                     </span>
                                   ) : (
-                                    <span className="text-[10px] px-2 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800/40 font-medium">
+                                    <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-800/60 text-zinc-400 border border-zinc-700/40 font-medium">
                                       Specialist
                                     </span>
                                   )}
@@ -490,8 +525,9 @@ export default function RolePathwaysView({
                                     .map((r) => (
                                       <span
                                         key={r}
-                                        className="text-[10px] px-2 py-0.5 rounded bg-zinc-800/60 text-zinc-400 border border-zinc-700/40 font-medium"
+                                        className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border font-medium ${trackColor(r).chip}`}
                                       >
+                                        <span className={`w-1.5 h-1.5 rounded-full ${trackColor(r).dot}`} aria-hidden="true" />
                                         {r}
                                       </span>
                                     ))}
@@ -511,7 +547,7 @@ export default function RolePathwaysView({
                                     <div className="flex items-center gap-1.5 font-medium text-blue-400 mb-1 text-[10px]">
                                       <FileText className="w-3 h-3" /> Note:
                                     </div>
-                                    <p className="line-clamp-2 text-[11px]">{userNotes[topic.id]}</p>
+                                    <p className="line-clamp-2 text-[11px]">{noteToPlainText(userNotes[topic.id])}</p>
                                   </div>
                                 )}
                               </div>
@@ -557,6 +593,7 @@ export default function RolePathwaysView({
                                         : "bg-zinc-800/60 text-zinc-300 border-zinc-700/50 hover:bg-zinc-800 hover:text-white"
                                     }`}
                                     title="Add or edit personal learning notes"
+                                    aria-label={`${hasNote ? "Edit note" : "Add note"} for ${topic.title}`}
                                   >
                                     <FileText className="w-3.5 h-3.5" />
                                     <span>{hasNote ? "Edit Note" : "Note"}</span>
@@ -566,6 +603,7 @@ export default function RolePathwaysView({
                                     onClick={() => onOpenShare(topic)}
                                     className="p-1.5 rounded-lg text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 transition border border-transparent hover:border-zinc-700"
                                     title="Share a key learning with your pod"
+                                    aria-label={`Share a learning about ${topic.title}`}
                                   >
                                     <Share2 className="w-3.5 h-3.5" />
                                   </button>

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { UserRole, verifyPassword, hashPassword } from '@/lib/auth'
+import { UserRole, verifyPassword, hashPassword, setSessionCookies } from '@/lib/auth'
 import { memoryStore } from '@/lib/prisma'
 import { blocksClient } from '@/lib/blocks'
 import {
@@ -27,13 +27,8 @@ export async function POST(req: Request) {
     // Live sync check with SELISE Blocks IAM role assignment
     const blocksIamRole = await resolveUserBlocksRole(email)
 
-    // Determine target role centrally
-    const reqRole = (body.role || '').toString().toUpperCase()
-    const isUnitHead =
-      blocksIamRole === 'UNIT_HEAD' ||
-      reqRole === 'UNIT_HEAD' ||
-      reqRole === 'EDUCATOR' ||
-      isLeadershipRole([], email)
+    // Role comes only from Blocks IAM (or the email heuristic), never from the request body
+    const isUnitHead = blocksIamRole === 'UNIT_HEAD' || isLeadershipRole([], email)
 
     const defaultRole: UserRole = isUnitHead ? 'UNIT_HEAD' : 'LEARNER'
 
@@ -67,20 +62,7 @@ export async function POST(req: Request) {
       memoryStore.userRoles.set(email, role)
       memoryStore.userRoles.set(id, role)
 
-      const cookieStore = await cookies()
-      const cookieOptions = {
-        path: '/',
-        httpOnly: false,
-        sameSite: 'lax' as const,
-        maxAge: 60 * 60 * 24 * 7,
-      }
-
-      cookieStore.set('txl_user_role', role, cookieOptions)
-      cookieStore.set('txl_user_id', id, cookieOptions)
-      cookieStore.set('txl_user_name', name, cookieOptions)
-      cookieStore.set('txl_user_email', email, cookieOptions)
-      cookieStore.set('txl_user_discipline', discipline, cookieOptions)
-      cookieStore.set('txl_user_avatar', avatar, cookieOptions)
+      setSessionCookies(await cookies(), { id, name, email, role, discipline, avatar })
 
       return NextResponse.json({
         success: true,
@@ -182,20 +164,7 @@ export async function POST(req: Request) {
     memoryStore.userRoles.set(email, role)
     memoryStore.userRoles.set(id, role)
 
-    const cookieStore = await cookies()
-    const cookieOptions = {
-      path: '/',
-      httpOnly: false,
-      sameSite: 'lax' as const,
-      maxAge: 60 * 60 * 24 * 7,
-    }
-
-    cookieStore.set('txl_user_role', role, cookieOptions)
-    cookieStore.set('txl_user_id', id, cookieOptions)
-    cookieStore.set('txl_user_name', name, cookieOptions)
-    cookieStore.set('txl_user_email', email, cookieOptions)
-    cookieStore.set('txl_user_discipline', discipline, cookieOptions)
-    cookieStore.set('txl_user_avatar', avatar, cookieOptions)
+    setSessionCookies(await cookies(), { id, name, email, role, discipline, avatar })
 
     return NextResponse.json({
       success: true,

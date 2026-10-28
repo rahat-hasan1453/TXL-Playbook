@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo, useEffect, useCallback } from "react"
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { CURRICULUM_DOMAINS, Domain, Topic } from "@/lib/curriculumData"
 import { UserSession } from "@/lib/auth"
@@ -30,15 +30,20 @@ import {
   Heart,
   LogOut,
   X,
+  CalendarDays,
 } from "lucide-react"
 import RolePathwaysView, { ROLE_TRACKS } from "@/components/RolePathwaysView"
 import UnitHeadManagementView from "@/components/UnitHeadManagementView"
+import LearningPlanner from "@/components/planner/LearningPlanner"
+import ThemeToggle from "@/components/ThemeToggle"
+import RichNoteEditor, { NoteViewer } from "@/components/NotesEditor"
+import { isNoteEmpty, noteToPlainText } from "@/lib/note-content"
 
 export default function TXLLearningPortal() {
   const router = useRouter()
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null)
   const [isLoadingSession, setIsLoadingSession] = useState(true)
-  const [activeTab, setActiveTab] = useState<"what-to-learn" | "my-notes" | "shared-feed" | "unit-head">("what-to-learn")
+  const [activeTab, setActiveTab] = useState<"what-to-learn" | "my-plan" | "my-notes" | "shared-feed" | "unit-head">("what-to-learn")
   const [selectedRoleTrack, setSelectedRoleTrack] = useState<string>("ALL")
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
@@ -250,41 +255,85 @@ export default function TXLLearningPortal() {
     }).catch((err) => console.warn("Failed to sync progress to server:", err))
   }
 
+  // Set a topic's completion directly (planner cards and reminder checklist)
+  const handleSetTopicCompleted = (topicId: string, completed: boolean) => {
+    setProgressState((prev) => {
+      const next = { ...prev }
+      if (completed) next[topicId] = "COMPLETED"
+      else delete next[topicId]
+      return next
+    })
+    fetch("/api/progress", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topicId, status: completed ? "COMPLETED" : "NOT_STARTED" }),
+    }).catch((err) => console.warn("Failed to sync progress to server:", err))
+  }
+
+  // Notes autosave while typing; the modal's Done button flushes any pending save
+  const [noteSaveState, setNoteSaveState] = useState<"idle" | "saving" | "saved">("idle")
+  const noteSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingNote = useRef<{ topicId: string; content: string } | null>(null)
+
+  const persistNote = (topicId: string, rawContent: string) => {
+    const content = isNoteEmpty(rawContent) ? "" : rawContent
+    const status = progressState[topicId] || "IN_PROGRESS"
+    setUserNotes((prev) => {
+      const next = { ...prev }
+      if (content) next[topicId] = content
+      else delete next[topicId]
+      return next
+    })
+    setProgressState((prev) => ({ ...prev, [topicId]: status }))
+    setNoteSaveState("saving")
+    fetch("/api/progress", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topicId, status, note: content }),
+    })
+      .then(() => setNoteSaveState("saved"))
+      .catch((err) => {
+        setNoteSaveState("idle")
+        console.warn("Failed to sync note to server:", err)
+      })
+  }
+
+  const flushPendingNote = () => {
+    if (noteSaveTimer.current) clearTimeout(noteSaveTimer.current)
+    noteSaveTimer.current = null
+    if (pendingNote.current) {
+      persistNote(pendingNote.current.topicId, pendingNote.current.content)
+      pendingNote.current = null
+    }
+  }
+
+  const handleNoteChange = (topicId: string, html: string) => {
+    setNoteDraft(html)
+    pendingNote.current = { topicId, content: html }
+    setNoteSaveState("idle")
+    if (noteSaveTimer.current) clearTimeout(noteSaveTimer.current)
+    noteSaveTimer.current = setTimeout(flushPendingNote, 800)
+  }
+
   // Open Notes Modal
   const handleOpenNotes = (topic: Topic) => {
+    flushPendingNote()
     setActiveModalTopic(topic)
     setNoteDraft(userNotes[topic.id] || "")
+    setNoteSaveState("idle")
     setIsShareModalOpen(false)
   }
 
-  // Save Note
-  const handleSaveNote = () => {
-    if (activeModalTopic) {
-      const topicId = activeModalTopic.id
-      const content = noteDraft
-      setUserNotes((prev) => ({
-        ...prev,
-        [topicId]: content,
-      }))
-      setActiveModalTopic(null)
-
-      // Immediately persist note to server
-      fetch("/api/progress", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          topicId,
-          status: progressState[topicId] || "IN_PROGRESS",
-          note: content,
-        }),
-      }).catch((err) => console.warn("Failed to sync note to server:", err))
-    }
+  // Close Notes Modal, saving anything still pending
+  const handleCloseNotes = () => {
+    flushPendingNote()
+    setActiveModalTopic(null)
   }
 
   // Open Share Modal
   const handleOpenShare = (topic: Topic) => {
     setActiveModalTopic(topic)
-    setShareDraft(userNotes[topic.id] || "")
+    setShareDraft(noteToPlainText(userNotes[topic.id] || ""))
     setIsShareModalOpen(true)
   }
 
@@ -403,6 +452,21 @@ export default function TXLLearningPortal() {
           )}
 
           {/* Right: User Profile Card */}
+          <div className="flex items-center gap-2">
+          <ThemeToggle />
+          {currentUserRole === "LEARNER" && (
+            <button
+              onClick={() => setActiveTab(activeTab === "my-plan" ? "what-to-learn" : "my-plan")}
+              className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition ${
+                activeTab === "my-plan"
+                  ? "bg-white text-black border-white"
+                  : "bg-[#121316] text-zinc-200 border-zinc-800/80 hover:border-zinc-700"
+              }`}
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              <span>{activeTab === "my-plan" ? "Curriculum" : "My Plan"}</span>
+            </button>
+          )}
           <div className="relative">
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -483,6 +547,16 @@ export default function TXLLearningPortal() {
                       </button>
 
                       <button
+                        onClick={() => { setActiveTab("my-plan"); setIsUserMenuOpen(false) }}
+                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition text-left ${
+                          activeTab === "my-plan" ? "bg-zinc-800 text-white" : "text-zinc-300 hover:bg-zinc-800/60"
+                        }`}
+                      >
+                        <CalendarDays className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>My Learning Plan</span>
+                      </button>
+
+                      <button
                         onClick={() => { setActiveTab("my-notes"); setIsUserMenuOpen(false) }}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition text-left ${
                           activeTab === "my-notes" ? "bg-zinc-800 text-white" : "text-zinc-300 hover:bg-zinc-800/60"
@@ -526,6 +600,7 @@ export default function TXLLearningPortal() {
                 </div>
               </>
             )}
+          </div>
           </div>
         </div>
       </header>
@@ -590,6 +665,16 @@ export default function TXLLearningPortal() {
               domains={domains}
             />
           </div>
+        )}
+
+        {/* ================= LEARNING PLANNER ================= */}
+        {activeTab === "my-plan" && (
+          <LearningPlanner
+            domains={domains}
+            progressState={progressState}
+            onSetTopicCompleted={handleSetTopicCompleted}
+            onOpenNotes={handleOpenNotes}
+          />
         )}
 
         {/* ================= VIEW 2: MY NOTES ================= */}
@@ -658,9 +743,9 @@ export default function TXLLearningPortal() {
                         <h3 className="font-semibold text-base text-zinc-100 mt-1">
                           {foundTopic?.title || topicId}
                         </h3>
-                        <p className="text-xs text-zinc-300 mt-3 whitespace-pre-wrap bg-[#0a0a0c] p-3.5 rounded-lg border border-zinc-800/80 leading-relaxed font-mono">
-                          {noteContent}
-                        </p>
+                        <div className="mt-3 bg-[#0a0a0c] p-3.5 rounded-lg border border-zinc-800/80 max-h-80 overflow-y-auto">
+                          <NoteViewer content={noteContent} />
+                        </div>
                       </div>
 
                       <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-xs">
@@ -777,42 +862,41 @@ export default function TXLLearningPortal() {
 
       {/* ================= NOTES MODAL ================= */}
       {currentUserRole !== "UNIT_HEAD" && activeModalTopic && !isShareModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#121316] border border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div>
-              <span className="text-[11px] font-medium text-zinc-400 bg-zinc-800/80 px-2.5 py-0.5 rounded-full border border-zinc-700/50">
-                Personal Learning Note
-              </span>
-              <h2 className="text-lg font-bold text-white mt-2 tracking-tight">{activeModalTopic.title}</h2>
-              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{activeModalTopic.description}</p>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Note for ${activeModalTopic.title}`}
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-2 sm:p-6"
+          onKeyDown={(e) => e.key === "Escape" && !e.defaultPrevented && handleCloseNotes()}
+        >
+          <div className="bg-[#121316] border border-zinc-800 rounded-2xl max-w-3xl w-full h-[92vh] sm:h-[86vh] shadow-2xl flex flex-col">
+            <div className="flex items-start justify-between gap-4 px-6 sm:px-10 pt-6 pb-4 border-b border-zinc-800/80">
+              <div className="min-w-0">
+                <span className="text-[11px] font-medium text-zinc-400 bg-zinc-800/80 px-2.5 py-0.5 rounded-full border border-zinc-700/50">
+                  Personal Learning Note
+                </span>
+                <h2 className="text-2xl font-bold text-white mt-3 tracking-tight">{activeModalTopic.title}</h2>
+                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{activeModalTopic.description}</p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="text-[11px] text-zinc-500">
+                  {noteSaveState === "saving" ? "Saving…" : noteSaveState === "saved" ? "Saved" : ""}
+                </span>
+                <button
+                  onClick={handleCloseNotes}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-white hover:bg-zinc-200 text-black shadow transition"
+                >
+                  Done
+                </button>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                Takeaways / Implementation Details:
-              </label>
-              <textarea
-                rows={5}
-                value={noteDraft}
-                onChange={(e) => setNoteDraft(e.target.value)}
-                placeholder="Write your personal observations, key takeaways, and how this applies to client deliverables..."
-                className="w-full bg-[#0a0a0c] border border-zinc-800 rounded-lg p-3 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-blue-500 font-mono leading-relaxed"
+            <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-5">
+              <RichNoteEditor
+                key={activeModalTopic.id}
+                initialContent={noteDraft}
+                onChange={(html) => handleNoteChange(activeModalTopic.id, html)}
               />
-            </div>
-
-            <div className="flex items-center justify-end space-x-3 pt-3 border-t border-zinc-800/80">
-              <button
-                onClick={() => setActiveModalTopic(null)}
-                className="px-4 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveNote}
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-white hover:bg-zinc-200 text-black shadow transition"
-              >
-                Save Note
-              </button>
             </div>
           </div>
         </div>

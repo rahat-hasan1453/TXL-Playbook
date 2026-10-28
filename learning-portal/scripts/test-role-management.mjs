@@ -157,8 +157,9 @@ async function runRoleTests() {
       }),
     })
     const headCallbackData = await headCallbackRes.json()
-    assert(headCallbackRes.status === 200, 'Blocks callback returns HTTP 200')
-    assert(headCallbackData.ok === true, 'Blocks callback response indicates ok: true')
+    // A code Blocks IAM can't verify must never produce a session
+    assert(headCallbackRes.status === 401, 'Unverifiable Blocks callback is rejected with HTTP 401')
+    assert(!headCallbackRes.headers.get('set-cookie'), 'Unverifiable Blocks callback sets no session cookie')
 
     // 3B: Test role isolation in server session when unauthenticated
     const unauthSessionRes = await fetch(`${BASE_URL}/api/auth/session`)
@@ -231,9 +232,23 @@ async function runRoleTests() {
     const cookieHeader = rawCookies.map(c => c.split(';')[0]).join('; ')
 
     // 5B: Admin promotes John to UNIT_HEAD via PATCH /api/auth/session
-    const promoteRes = await fetch(`${BASE_URL}/api/auth/session`, {
+    // Only a signed-in Unit Head may assign roles; an anonymous caller must be refused
+    const anonPromote = await fetch(`${BASE_URL}/api/auth/session`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'john.developer@selise.ch', role: 'UNIT_HEAD' }),
+    })
+    assert(anonPromote.status === 403, 'Anonymous role promotion is rejected with HTTP 403')
+
+    const adminLogin = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'sarah.lead@selise.ch', password: 'Password123!' }),
+    })
+    const adminCookies = adminLogin.headers.getSetCookie().map(c => c.split(';')[0]).join('; ')
+    const promoteRes = await fetch(`${BASE_URL}/api/auth/session`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Cookie: adminCookies },
       body: JSON.stringify({ email: 'john.developer@selise.ch', role: 'UNIT_HEAD' }),
     })
     const promoteData = await promoteRes.json()

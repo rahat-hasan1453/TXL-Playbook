@@ -13,6 +13,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("txl_theme");if(t==="light")document.documentElement.classList.add("light")}catch(e){}`,
+          }}
+        />
+      </head>
       <body
         suppressHydrationWarning
         className="bg-[#0a0a0c] text-zinc-100 antialiased selection:bg-zinc-800 selection:text-white min-h-screen"

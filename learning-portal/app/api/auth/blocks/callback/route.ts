@@ -8,6 +8,7 @@ import {
   resolveUserBlocksRole,
 } from "@/lib/blocks-auth"
 import { memoryStore } from "@/lib/prisma"
+import { setSessionCookies } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
         state,
       })
     } catch (cbErr) {
-      console.warn("Blocks callback warning (handled gracefully):", cbErr)
+      console.warn("Blocks callback failed:", cbErr)
     }
 
     const cbData = callbackResponse as Record<string, unknown> | null
@@ -53,8 +54,15 @@ export async function POST(request: NextRequest) {
       accessClaims.email ||
       userObj.email ||
       cbData?.email ||
-      "blocks.user@selise.ch"
+      ""
     ) as string
+
+    if (!userEmail) {
+      return NextResponse.json(
+        { error: "Blocks sign-in did not return an email address." },
+        { status: 401 }
+      )
+    }
 
     const userName = (
       idClaims.name ||
@@ -108,21 +116,7 @@ export async function POST(request: NextRequest) {
     memoryStore.userRoles.set(userId, role)
 
     // Set authenticated portal cookies
-    const cookieStore = await cookies()
-    const maxAge = 60 * 60 * 24 * 7 // 7 days
-    const cookieOptions = {
-      path: "/",
-      httpOnly: false,
-      sameSite: "lax" as const,
-      maxAge,
-    }
-
-    cookieStore.set("txl_user_role", role, cookieOptions)
-    cookieStore.set("txl_user_id", userId, cookieOptions)
-    cookieStore.set("txl_user_email", userEmail, cookieOptions)
-    cookieStore.set("txl_user_name", userName, cookieOptions)
-    cookieStore.set("txl_user_discipline", discipline, cookieOptions)
-    cookieStore.set("txl_user_avatar", avatar, cookieOptions)
+    setSessionCookies(await cookies(), { id: userId, name: userName, email: userEmail.toLowerCase(), role, discipline, avatar })
 
     return NextResponse.json({
       ok: true,

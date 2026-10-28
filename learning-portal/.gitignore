@@ -30,3 +30,7 @@ yarn-error.log*
 .claude/
 .idea/
 .vscode/
+
+# Local reminder secrets and sent-mail log
+.data/.reminder-secret
+.data/reminder-outbox.json

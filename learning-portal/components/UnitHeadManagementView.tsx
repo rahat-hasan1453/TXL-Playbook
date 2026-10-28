@@ -3,6 +3,8 @@
 import React, { useState, useMemo, useEffect } from "react"
 import { Domain, Topic } from "@/lib/curriculumData"
 import { UserSession } from "@/lib/auth"
+import { NoteViewer } from "@/components/NotesEditor"
+import { noteToPlainText } from "@/lib/note-content"
 import {
   ShieldAlert,
   Users,
@@ -904,7 +906,7 @@ export default function UnitHeadManagementView({
                                         {note && (
                                           <div className="mt-1 pt-1 border-t border-zinc-800/80 text-[10px] text-zinc-400 font-mono">
                                             <span className="text-blue-400 font-sans font-medium">Note: </span>
-                                            {note}
+                                            <span className="line-clamp-3">{noteToPlainText(note)}</span>
                                           </div>
                                         )}
                                       </div>
@@ -1000,9 +1002,11 @@ export default function UnitHeadManagementView({
                             </div>
 
                             {note && (
-                              <div className="mt-2 pt-2 border-t border-zinc-800 text-xs text-zinc-300 font-mono bg-[#0a0a0c] p-2 rounded">
+                              <div className="mt-2 pt-2 border-t border-zinc-800 text-xs text-zinc-300 bg-[#0a0a0c] p-2 rounded">
                                 <span className="text-blue-400 font-sans font-medium">Learner Note: </span>
-                                {note}
+                                <div className="mt-1 max-h-64 overflow-y-auto">
+                                  <NoteViewer content={note} />
+                                </div>
                               </div>
                             )}
                           </div>

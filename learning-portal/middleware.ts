@@ -3,7 +3,8 @@ import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const userRole = request.cookies.get('txl_user_role')?.value
+  // A session needs both the role cookie and its server-issued signature (verified in getServerSession)
+  const userRole = request.cookies.get('txl_sig')?.value ? request.cookies.get('txl_user_role')?.value : undefined
 
   // Public paths that do not require authentication
   const isPublicPath =
@@ -11,6 +12,11 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/_next') ||
     pathname === '/favicon.ico' ||
+    // Reminder email links authenticate with their own signed token
+    pathname.startsWith('/reminder/') ||
+    pathname === '/api/reminders/act' ||
+    // Checks the cron secret or the session itself
+    pathname === '/api/reminders/run' ||
     (pathname === '/api/feed' && request.method === 'GET') ||
     (pathname === '/api/curriculum' && request.method === 'GET')
 

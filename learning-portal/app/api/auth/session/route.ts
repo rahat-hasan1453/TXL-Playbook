@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { getServerSession, UserRole } from '@/lib/auth'
+import { getServerSession, setSessionCookies, SESSION_COOKIE_NAMES, UserRole } from '@/lib/auth'
 import { memoryStore } from '@/lib/prisma'
 import { resolveUserBlocksRole } from '@/lib/blocks-auth'
 
 export async function GET() {
   const session = await getServerSession()
+  const cookieStore = await cookies()
   if (!session.user) {
+    // Missing, tampered or expired session: clear leftovers so the login page can't bounce back
+    for (const name of SESSION_COOKIE_NAMES) cookieStore.delete(name)
     return NextResponse.json({ user: null })
   }
 
-  const cookieStore = await cookies()
   const email = session.user.email.toLowerCase()
   const currentRole = session.user.role
 
@@ -34,22 +36,13 @@ export async function GET() {
     (resolvedRole === 'LEARNER' && session.user.discipline === 'Leadership & Strategy')
 
   if (resolvedRole !== currentRole || needsDisciplineUpdate) {
-    const cookieOptions = {
-      path: '/',
-      httpOnly: false,
-      sameSite: 'lax' as const,
-      maxAge: 60 * 60 * 24 * 7,
-    }
-
-    cookieStore.set('txl_user_role', resolvedRole, cookieOptions)
-
     let updatedDiscipline = session.user.discipline
     if (resolvedRole === 'UNIT_HEAD') {
       updatedDiscipline = 'Leadership & Strategy'
     } else {
       updatedDiscipline = 'Cloud Systems Engineer'
     }
-    cookieStore.set('txl_user_discipline', updatedDiscipline, cookieOptions)
+    setSessionCookies(cookieStore, { ...session.user, role: resolvedRole, discipline: updatedDiscipline })
 
     // Update in-memory user record
     const existing = memoryStore.users.get(email)
@@ -80,6 +73,10 @@ export async function GET() {
 // Allows an administrator or IAM event to promote/assign a role dynamically
 export async function PATCH(req: Request) {
   try {
+    const caller = await getServerSession()
+    if (!caller.user || caller.user.role !== 'UNIT_HEAD') {
+      return NextResponse.json({ error: 'Only Unit Heads can assign roles' }, { status: 403 })
+    }
     const body = await req.json()
     const { email, userId, role } = body
 
@@ -94,26 +91,6 @@ export async function PATCH(req: Request) {
     }
     if (userId) {
       memoryStore.userRoles.set(userId, assignedRole)
-    }
-
-    // Check if the current session caller is the promoted user
-    const session = await getServerSession()
-    if (
-      session.user &&
-      ((email && session.user.email.toLowerCase() === email.toLowerCase()) ||
-        (userId && session.user.id === userId))
-    ) {
-      const cookieStore = await cookies()
-      const cookieOptions = {
-        path: '/',
-        httpOnly: false,
-        sameSite: 'lax' as const,
-        maxAge: 60 * 60 * 24 * 7,
-      }
-      cookieStore.set('txl_user_role', assignedRole, cookieOptions)
-      if (assignedRole === 'UNIT_HEAD') {
-        cookieStore.set('txl_user_discipline', 'Leadership & Strategy', cookieOptions)
-      }
     }
 
     return NextResponse.json({

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { blocksClient } from "@/lib/blocks"
-import { hashPassword } from "@/lib/auth"
+import { hashPassword, setSessionCookies, type UserRole } from "@/lib/auth"
+import { resolveUserBlocksRole } from "@/lib/blocks-auth"
 import { memoryStore } from "@/lib/prisma"
 
 export async function POST(request: NextRequest) {
@@ -12,7 +13,6 @@ export async function POST(request: NextRequest) {
       password,
       firstName,
       lastName,
-      role = "LEARNER",
       discipline = "Product Engineer",
       viaBlocks = true,
     } = body
@@ -33,6 +33,14 @@ export async function POST(request: NextRequest) {
 
     const cleanEmail = email.trim().toLowerCase()
 
+    // An existing account can't be re-registered (that would overwrite its password)
+    if (memoryStore.users.has(cleanEmail)) {
+      return NextResponse.json(
+        { error: "An account with this email already exists. Please sign in." },
+        { status: 409 }
+      )
+    }
+
     let blocksResult: unknown = null
     if (viaBlocks) {
       try {
@@ -48,8 +56,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Set authenticated portal cookies
-    const cookieStore = await cookies()
-    const maxAge = 60 * 60 * 24 * 7 // 7 days
+    // The requested role is never trusted: Blocks IAM decides who is a Unit Head
+    const role: UserRole = await resolveUserBlocksRole(cleanEmail)
     const fullName = `${firstName || ""} ${lastName || ""}`.trim() || cleanEmail.split("@")[0]
     const initials =
       fullName
@@ -67,18 +75,20 @@ export async function POST(request: NextRequest) {
       email: cleanEmail,
       passwordHash: hashPassword(password),
       name: fullName,
-      role: role as "LEARNER" | "UNIT_HEAD",
+      role,
       discipline,
       avatar: initials,
     })
-    memoryStore.userRoles.set(cleanEmail, role as "LEARNER" | "UNIT_HEAD")
+    memoryStore.userRoles.set(cleanEmail, role)
 
-    cookieStore.set("txl_user_role", role, { path: "/", maxAge })
-    cookieStore.set("txl_user_id", resolvedUserId, { path: "/", maxAge })
-    cookieStore.set("txl_user_email", cleanEmail, { path: "/", maxAge })
-    cookieStore.set("txl_user_name", fullName, { path: "/", maxAge })
-    cookieStore.set("txl_user_discipline", discipline, { path: "/", maxAge })
-    cookieStore.set("txl_user_avatar", initials, { path: "/", maxAge })
+    setSessionCookies(await cookies(), {
+      id: resolvedUserId,
+      name: fullName,
+      email: cleanEmail,
+      role,
+      discipline: role === "UNIT_HEAD" ? "Leadership & Strategy" : discipline,
+      avatar: initials,
+    })
 
     return NextResponse.json({
       success: true,

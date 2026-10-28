@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { ArrowDown, Check, FileText, Play, Star, Target, Trophy, Undo2, X } from "lucide-react"
 import type { Domain, Topic } from "@/lib/curriculumData"
 import { DAILY_GOAL_OPTIONS, GameSummary, LeaderboardEntry, XP_RULES } from "@/lib/gamification"
-import { LearningPlan, todayIn } from "@/lib/learning-plan"
+import { LearningPlan, addDays, todayIn } from "@/lib/learning-plan"
 import { COMPULSORY_COLOR, topicTrack, trackColor } from "@/lib/track-colors"
 import { onReward } from "@/lib/reward-events"
 
@@ -36,7 +36,7 @@ interface PathWeek {
 }
 
 // Gentle zig-zag, Duolingo style
-const OFFSETS = [0, 44, 72, 44, 0, -44, -72, -44]
+const OFFSETS = [0, 30, 48, 30, 0, -30, -48, -30]
 
 /**
  * The path follows the plan's own schedule: each day is one step holding that day's
@@ -261,8 +261,85 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
   const today = todayIn(plan.timezone)
   const goalPct = summary ? Math.min(100, Math.round((summary.todayXp / summary.dailyGoal) * 100)) : 0
 
+  // The running week: the one holding today, or the next week with something left to do
+  const todayDay = Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${plan.startDate}T00:00:00Z`)) / 86_400_000) + 1
+  const runningNo = Math.max(1, Math.ceil(todayDay / 7))
+  const running =
+    weeks.find((w) => w.week === runningNo) ||
+    weeks.find((w) => w.steps.some((st) => st.nodes.some((n) => !isDone(n.topic.id)))) ||
+    weeks[weeks.length - 1]
+  const runStart = running ? addDays(plan.startDate, (running.week - 1) * 7) : today
+  const runDays = Array.from({ length: 7 }, (_, i) => addDays(runStart, i))
+  const runTopics = running ? running.steps.flatMap((st) => st.nodes) : []
+  const runDone = runTopics.filter((n) => isDone(n.topic.id)).length
+
+  const weekCard = running && (
+    <div className="bg-[#121316] border border-zinc-800/80 border-b-4 rounded-2xl p-4">
+      <p className="text-[11px] font-bold uppercase tracking-wide text-zinc-400">This week</p>
+      <div className="flex items-baseline justify-between mt-1">
+        <h2 className="text-lg font-extrabold text-white">Week {running.week}</h2>
+        <span className="text-xs font-bold text-zinc-300">
+          {runDone}/{runTopics.length}
+        </span>
+      </div>
+      <p className="text-xs text-zinc-400">
+        {dateLabel(runDays[0])} – {dateLabel(runDays[6])}
+      </p>
+      <div className="h-2 rounded-full bg-zinc-800 overflow-hidden mt-2.5">
+        <div
+          className="h-full rounded-full bg-emerald-500 transition-all"
+          style={{ width: `${runTopics.length ? Math.round((runDone / runTopics.length) * 100) : 0}%` }}
+        />
+      </div>
+      <ol className="grid grid-cols-7 gap-1 mt-3" aria-label="Days this week">
+        {runDays.map((date) => {
+          const nodes = running.steps.filter((st) => st.date === date).flatMap((st) => st.nodes)
+          const allDone = nodes.length > 0 && nodes.every((n) => isDone(n.topic.id))
+          const missed = date < today && nodes.some((n) => !isDone(n.topic.id))
+          const isToday = date === today
+          const weekday = new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", { timeZone: "UTC", weekday: "narrow" })
+          return (
+            <li key={date} className="flex flex-col items-center gap-1" title={`${dateLabel(date)}${nodes.length ? ` · ${nodes.length} topics` : ""}`}>
+              <span className="text-[10px] font-bold text-zinc-500">{weekday}</span>
+              <span
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                  allDone
+                    ? "bg-emerald-500 text-black"
+                    : missed
+                    ? "bg-red-950/60 text-red-300 border border-red-800/60"
+                    : isToday
+                    ? "border-2 border-orange-400 text-white"
+                    : nodes.length
+                    ? "bg-zinc-800 text-zinc-300"
+                    : "text-zinc-600"
+                }`}
+              >
+                {allDone ? <Check className="w-3 h-3 stroke-[3]" /> : Number(date.slice(8))}
+              </span>
+            </li>
+          )
+        })}
+      </ol>
+      <div className="flex flex-col gap-1 mt-3 pt-3 border-t border-zinc-800/80 text-[11px] text-zinc-400">
+        <span className="flex items-center gap-1.5">
+          <span className={`w-2 h-2 rounded-full ${COMPULSORY_COLOR.bar}`} /> Compulsory
+        </span>
+        {plan.tracks.map((t) => (
+          <span key={t} className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${trackColor(t).dot}`} /> {t}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+
   return (
     <div className="flex flex-col lg:flex-row gap-6 items-start">
+      {/* ---------- running week ---------- */}
+      <aside className="w-full lg:w-56 shrink-0 lg:sticky lg:top-24" aria-label="This week">
+        {weekCard}
+      </aside>
+
       {/* ---------- path ---------- */}
       <section ref={pathRef} className="flex-1 min-w-0 w-full" aria-label="Learning path">
         <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
@@ -321,26 +398,13 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
             const weekDone = weekTopics.filter((n) => isDone(n.topic.id)).length
             return (
               <div key={week.week}>
-                <div className="sticky top-[72px] z-30 rounded-2xl px-5 py-4 flex items-center justify-between gap-4 bg-[#18191d] border border-zinc-700 border-b-4 shadow-lg">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-zinc-400">
-                      {dateLabel(week.steps[0].date)} – {dateLabel(week.steps[week.steps.length - 1].date)}
-                    </p>
-                    <h2 className="text-base sm:text-lg font-extrabold text-white mt-0.5">Week {week.week}</h2>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] text-zinc-400">
-                      <span className="flex items-center gap-1.5">
-                        <span className={`w-2 h-2 rounded-full ${COMPULSORY_COLOR.bar}`} /> Compulsory
-                      </span>
-                      {plan.tracks.map((t) => (
-                        <span key={t} className="flex items-center gap-1.5">
-                          <span className={`w-2 h-2 rounded-full ${trackColor(t).dot}`} /> {t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <span className="shrink-0 text-xs font-bold text-zinc-200 bg-zinc-800 rounded-lg px-2.5 py-1">
+                <div className="relative z-10 flex items-center gap-3 text-[11px] font-bold uppercase tracking-wide text-zinc-500">
+                  <span className="flex-1 h-px bg-zinc-800" />
+                  <span className="bg-[#0a0a0c] px-2">
+                    Week {week.week} · {dateLabel(week.steps[0].date)} – {dateLabel(week.steps[week.steps.length - 1].date)} ·{" "}
                     {weekDone}/{weekTopics.length}
                   </span>
+                  <span className="flex-1 h-px bg-zinc-800" />
                 </div>
 
                 <ol className="flex flex-col items-center gap-[150px] pt-20 pb-24">

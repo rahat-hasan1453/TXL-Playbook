@@ -4,15 +4,19 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   AlertTriangle,
   Bell,
+  CalendarCheck,
   CalendarDays,
+  Check,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  Circle,
   FileText,
+  Flame,
   GripVertical,
   Send,
   Settings2,
+  Snowflake,
+  Star,
   Target,
 } from "lucide-react"
 import type { Domain, Topic } from "@/lib/curriculumData"
@@ -26,7 +30,8 @@ import {
   weekdayOf,
 } from "@/lib/learning-plan"
 import PlanWizard from "./PlanWizard"
-import { announceReward } from "@/lib/reward-events"
+import { announceReward, onReward } from "@/lib/reward-events"
+import { XP_RULES, type GameSummary } from "@/lib/gamification"
 import { COMPULSORY_COLOR, TRACK_COLORS, topicTrack, trackColor } from "@/lib/track-colors"
 
 interface LearningPlannerProps {
@@ -69,6 +74,8 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
   const [dragOverDate, setDragOverDate] = useState<string | null>(null)
   const [notice, setNotice] = useState<{ tone: "ok" | "warn"; text: string; link?: string } | null>(null)
   const [sending, setSending] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [summary, setSummary] = useState<GameSummary | null>(null)
 
   const today = todayIn(plan?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC")
 
@@ -87,6 +94,16 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
       .then((data) => setPlan(data?.plan || null))
       .catch(() => {})
       .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    const load = () =>
+      fetch("/api/game")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => data && setSummary(data))
+        .catch(() => {})
+    load()
+    return onReward(load)
   }, [])
 
   useEffect(() => {
@@ -201,72 +218,63 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
     )
   }
 
-  const todayItems = itemsByDate.get(today) || []
-  const todayGoals = goalsOn(plan, today)
-  const todayChecked = new Set(plan.goalChecks[today] || [])
   const currentMonth = month || monthKey(plan.startDate)
   const canGoBack = currentMonth > monthKey(plan.startDate)
   const canGoForward = currentMonth < monthKey(plan.endDate)
+  const selected = selectedDate || today
 
-  const renderCard = (item: PlanItem, { compact = false, inCalendar = false } = {}) => {
-    const topic = topicsById.get(item.topicId)!
-    const done = completedIds.has(item.topicId)
-    const missed = isMissed(item)
-    const dimmed = inCalendar && showMissed && !missed
-    return (
-      <div
-        key={item.id}
-        draggable
-        onDragStart={(e) => {
-          e.dataTransfer.setData("text/plain", item.id)
-          e.dataTransfer.effectAllowed = "move"
-        }}
-        className={`group flex items-start gap-1.5 rounded-lg border px-2 py-1.5 cursor-grab active:cursor-grabbing transition ${
-          done
-            ? "bg-emerald-950/30 border-emerald-800/50"
-            : missed
-            ? "bg-red-950/40 border-red-800/60"
-            : item.kind === "COMPULSORY"
-            ? COMPULSORY_COLOR.planCard
-            : trackColor(topicTrack(topic.roles, plan.tracks) || "ALL").planCard
-        } ${dimmed ? "opacity-30" : ""}`}
-        title={`${topic.title} · ${item.kind === "COMPULSORY" ? "Compulsory" : "Career track"}${missed ? " · Missed" : ""}`}
-      >
-        <button
-          onClick={() => onSetTopicCompleted(item.topicId, !done)}
-          className="mt-px shrink-0"
-          title={done ? "Mark as not done" : "Mark as done"}
-        >
-          {done ? (
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-          ) : (
-            <Circle className={`w-3.5 h-3.5 ${missed ? "text-red-400" : "text-zinc-500 hover:text-zinc-200"}`} />
-          )}
-        </button>
-        <button
-          onClick={() => onOpenNotes(topic)}
-          className={`text-left text-[11px] leading-snug font-medium ${compact ? "line-clamp-2" : ""} ${
-            done ? "text-zinc-400 line-through" : "text-zinc-100 hover:text-white"
-          }`}
-        >
-          {topic.title}
-        </button>
-        <GripVertical className="w-3 h-3 text-zinc-600 shrink-0 ml-auto mt-px opacity-0 group-hover:opacity-100" />
-      </div>
-    )
+  const dayState = (date: string) => {
+    const items = itemsByDate.get(date) || []
+    const goals = goalsOn(plan, date)
+    const checked = new Set(plan.goalChecks[date] || [])
+    const allDone =
+      items.length + goals.length > 0 &&
+      items.every((i) => completedIds.has(i.topicId)) &&
+      goals.every((g) => checked.has(g.id))
+    const missed = date < today && items.some((i) => !completedIds.has(i.topicId))
+    return { items, goals, checked, allDone, missed }
   }
+
+  // Days in the visible month that have something planned, and how many of them are fully done
+  const monthDates = monthGrid(currentMonth).filter((d) => monthKey(d) === currentMonth && (itemsByDate.get(d)?.length || 0) > 0)
+  const monthDone = monthDates.filter((d) => dayState(d).allDone).length
+
+  const itemColor = (item: PlanItem) => {
+    const topic = topicsById.get(item.topicId)!
+    return item.kind === "COMPULSORY" ? COMPULSORY_COLOR.bar : trackColor(topicTrack(topic.roles, plan.tracks) || "ALL").bar
+  }
+
+  const sel = dayState(selected)
+  const selDate = new Date(`${selected}T00:00:00Z`)
+  const selLabel = selDate.toLocaleDateString("en-GB", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" })
+  const selDay = Math.round((selDate.getTime() - Date.parse(`${plan.startDate}T00:00:00Z`)) / 86_400_000) + 1
+  const selPendingXp =
+    sel.items.filter((i) => !completedIds.has(i.topicId)).length * XP_RULES.topic +
+    sel.goals.filter((g) => !sel.checked.has(g.id)).length * XP_RULES.goal
+
+  const finishDay = () => {
+    sel.items.filter((i) => !completedIds.has(i.topicId)).forEach((i) => onSetTopicCompleted(i.topicId, true))
+    if (selected <= today) sel.goals.filter((g) => !sel.checked.has(g.id)).forEach((g) => toggleGoal(g.id, selected, true))
+  }
+
+  const stat = (icon: React.ReactNode, value: string, label: string) => (
+    <div className="flex items-center gap-3 bg-[#121316] border border-zinc-800/80 border-b-4 rounded-2xl px-4 py-3">
+      {icon}
+      <div>
+        <p className="text-xl font-extrabold text-white leading-tight">{value}</p>
+        <p className="text-[11px] text-zinc-400 font-medium">{label}</p>
+      </div>
+    </div>
+  )
 
   return (
     <div className="space-y-5">
-      {/* Header + today's focus */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-[#121316] p-6 rounded-2xl border border-zinc-800/80 shadow-xl">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex-1 bg-[#121316] p-5 rounded-2xl border border-zinc-800/80">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <span className="text-[11px] font-medium tracking-wide text-zinc-400 bg-zinc-800/80 px-2.5 py-0.5 rounded-full border border-zinc-700/50">
-                Learning Planner
-              </span>
-              <h1 className="text-2xl font-bold text-white mt-2 tracking-tight flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
                 <CalendarDays className="w-6 h-6 text-blue-400" /> My Learning Plan
               </h1>
               <p className="text-sm text-zinc-400 mt-1">
@@ -280,82 +288,59 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
               <Settings2 className="w-3.5 h-3.5" /> Edit plan
             </button>
           </div>
-          <div className="flex flex-wrap items-center gap-3 mt-5 text-[11px] text-zinc-400">
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-blue-500/70" /> Compulsory</span>
-            {plan.tracks.map((t) => (
-              <span key={t} className="flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded ${TRACK_COLORS[t].dot}`} /> {t}</span>
-            ))}
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-amber-500/70" /> Personal goal</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-emerald-500/70" /> Done</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-red-500/70" /> Missed</span>
-            <span className="text-zinc-500">· Drag a card onto another day to reschedule it</span>
-          </div>
         </div>
-
-        <div className="bg-[#121316] p-5 rounded-2xl border border-zinc-800/80 shadow-xl space-y-3">
-          <p className="text-xs font-semibold text-zinc-200">Today · {today}</p>
-          {todayItems.length === 0 && todayGoals.length === 0 ? (
-            <p className="text-xs text-zinc-500">Nothing planned for today.</p>
-          ) : (
-            <div className="space-y-1.5">
-              {todayItems.map((item) => renderCard(item))}
-              {todayGoals.map((goal) => {
-                const done = todayChecked.has(goal.id)
-                return (
-                  <button
-                    key={goal.id}
-                    onClick={() => toggleGoal(goal.id, today, !done)}
-                    className={`w-full flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-left text-[11px] font-medium transition ${
-                      done ? "bg-emerald-950/30 border-emerald-800/50 text-zinc-400 line-through" : "bg-amber-950/30 border-amber-800/50 text-zinc-100"
-                    }`}
-                  >
-                    {done ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Target className="w-3.5 h-3.5 text-amber-400" />}
-                    {goal.title}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-          <div className="pt-3 border-t border-zinc-800/80 space-y-2">
-            <p className="text-[11px] text-zinc-400 flex items-center gap-1.5">
-              <Bell className="w-3 h-3" /> Daily email at {plan.reminderTime} ({plan.timezone})
+        <div className="lg:w-80 bg-[#121316] p-5 rounded-2xl border border-zinc-800/80 space-y-2">
+          <p className="text-[11px] text-zinc-400 flex items-center gap-1.5">
+            <Bell className="w-3 h-3" /> Daily email at {plan.reminderTime} ({plan.timezone})
+          </p>
+          <button
+            onClick={sendTestReminder}
+            disabled={sending}
+            className="w-full px-3 py-1.5 rounded-lg bg-zinc-800/80 text-zinc-200 border border-zinc-700/60 text-xs font-medium hover:bg-zinc-700 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+          >
+            <Send className="w-3.5 h-3.5" /> {sending ? "Sending…" : "Send today's reminder now"}
+          </button>
+          {notice && (
+            <p className={`text-[11px] ${notice.tone === "ok" ? "text-emerald-300" : "text-amber-300"}`}>
+              {notice.text}{" "}
+              {notice.link && (
+                <a href={notice.link} target="_blank" rel="noreferrer" className="underline hover:text-white">
+                  Open checklist
+                </a>
+              )}
             </p>
-            <button
-              onClick={sendTestReminder}
-              disabled={sending}
-              className="w-full px-3 py-1.5 rounded-lg bg-zinc-800/80 text-zinc-200 border border-zinc-700/60 text-xs font-medium hover:bg-zinc-700 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
-            >
-              <Send className="w-3.5 h-3.5" /> {sending ? "Sending…" : "Send today's reminder now"}
-            </button>
-            {notice && (
-              <p className={`text-[11px] ${notice.tone === "ok" ? "text-emerald-300" : "text-amber-300"}`}>
-                {notice.text}{" "}
-                {notice.link && (
-                  <a href={notice.link} target="_blank" rel="noreferrer" className="underline hover:text-white">
-                    Open checklist
-                  </a>
-                )}
-              </p>
-            )}
-          </div>
+          )}
         </div>
       </div>
 
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {stat(<Flame className="w-7 h-7 text-orange-400" />, String(summary?.streak ?? 0), "Day streak")}
+        {stat(<CalendarCheck className="w-7 h-7 text-emerald-400" />, `${monthDone} / ${monthDates.length}`, "Days completed this month")}
+        {stat(
+          <Snowflake className="w-7 h-7 text-sky-400" />,
+          summary?.freezeAvailable === false ? "0" : "1",
+          "Streak freeze this week"
+        )}
+      </div>
+
       {/* Calendar */}
-      <div className="bg-[#121316] rounded-2xl border border-zinc-800/80 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-zinc-800/80">
+      <div className="bg-[#121316] rounded-2xl border border-zinc-800/80 p-3 sm:p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3 px-1">
           <div className="flex items-center gap-2">
             <button
               onClick={() => canGoBack && setMonth(shiftMonth(currentMonth, -1))}
               disabled={!canGoBack}
+              aria-label="Previous month"
               className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 transition"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <h2 className="text-sm font-bold text-white w-36 text-center">{monthLabel(currentMonth)}</h2>
+            <h2 className="text-base font-extrabold text-white w-40 text-center">{monthLabel(currentMonth)}</h2>
             <button
               onClick={() => canGoForward && setMonth(shiftMonth(currentMonth, 1))}
               disabled={!canGoForward}
+              aria-label="Next month"
               className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 transition"
             >
               <ChevronRight className="w-4 h-4" />
@@ -363,6 +348,7 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
           </div>
           <button
             onClick={() => setShowMissed((v) => !v)}
+            aria-pressed={showMissed}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition flex items-center gap-1.5 ${
               showMissed ? "bg-red-950/60 text-red-200 border-red-700/60" : "bg-zinc-900 text-zinc-300 border-zinc-700/60 hover:border-zinc-500"
             }`}
@@ -372,19 +358,26 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
         </div>
 
         {showMissed && (
-          <div className="px-5 py-4 border-b border-zinc-800/80 bg-red-950/10">
+          <div className="mb-3 p-3 rounded-xl border border-red-900/50 bg-red-950/10">
             {missedItems.length === 0 ? (
               <p className="text-xs text-zinc-400">No missed topics. Nice work!</p>
             ) : (
               <>
-                <p className="text-xs text-zinc-400 mb-2.5">
-                  Drag a missed topic onto an upcoming day to reschedule it, or tick it off if you already covered it.
-                </p>
-                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-2">
+                <p className="text-xs text-zinc-400 mb-2">Drag a missed topic onto an upcoming day to reschedule it.</p>
+                <div className="flex flex-wrap gap-2">
                   {missedItems.map((item) => (
-                    <div key={item.id}>
-                      {renderCard(item)}
-                      <p className="text-[10px] text-red-300/70 mt-0.5 pl-1">was due {item.date}</p>
+                    <div
+                      key={item.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData("text/plain", item.id)
+                        e.dataTransfer.effectAllowed = "move"
+                      }}
+                      className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-red-950/40 border border-red-800/60 text-[11px] text-zinc-100 cursor-grab"
+                    >
+                      <GripVertical className="w-3 h-3 text-red-300/70" />
+                      {topicsById.get(item.topicId)?.title}
+                      <span className="text-red-300/70">· {item.date.slice(5)}</span>
                     </div>
                   ))}
                 </div>
@@ -393,86 +386,232 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <div className="min-w-[860px] grid grid-cols-7">
-            {WEEK_HEADER.map((d) => (
-              <div key={d} className="px-2 py-2 text-[11px] font-semibold text-zinc-500 text-center border-b border-zinc-800/80">
-                {d}
-              </div>
-            ))}
-            {monthGrid(currentMonth).map((date) => {
-              const inMonth = monthKey(date) === currentMonth
-              const inPlan = date >= plan.startDate && date <= plan.endDate
-              const items = itemsByDate.get(date) || []
-              const goals = goalsOn(plan, date)
-              const checked = new Set(plan.goalChecks[date] || [])
-              const isToday = date === today
-              return (
-                <div
-                  key={date}
-                  data-date={date}
-                  onDragOver={(e) => {
-                    if (date < plan.startDate) return
+        <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+          {WEEK_HEADER.map((d) => (
+            <div key={d} className="text-center text-[11px] font-bold uppercase tracking-wide text-zinc-500 pb-1">
+              {d}
+            </div>
+          ))}
+          {monthGrid(currentMonth).map((date) => {
+            const inMonth = monthKey(date) === currentMonth
+            const inPlan = date >= plan.startDate && date <= plan.endDate
+            const state = dayState(date)
+            const isToday = date === today
+            const isSelected = date === selected
+            const pendingGoals = state.goals.filter((g) => !state.checked.has(g.id)).length
+            return (
+              <div
+                key={date}
+                data-date={date}
+                role="button"
+                tabIndex={inMonth ? 0 : -1}
+                aria-label={`${date}${isToday ? ", today" : ""}${state.allDone ? ", completed" : state.missed ? ", missed" : ""}, ${state.items.length} topics`}
+                aria-pressed={isSelected}
+                onClick={() => inMonth && setSelectedDate(date)}
+                onKeyDown={(e) => {
+                  if (inMonth && (e.key === "Enter" || e.key === " ")) {
                     e.preventDefault()
-                    e.dataTransfer.dropEffect = "move"
-                    if (dragOverDate !== date) setDragOverDate(date)
-                  }}
-                  onDragLeave={() => setDragOverDate((d) => (d === date ? null : d))}
-                  onDrop={(e) => {
-                    e.preventDefault()
-                    setDragOverDate(null)
-                    const itemId = e.dataTransfer.getData("text/plain")
-                    if (itemId) moveItem(itemId, date)
-                  }}
-                  className={`min-h-[118px] p-1.5 border-b border-r border-zinc-800/60 space-y-1 transition ${
-                    inMonth ? "" : "opacity-40"
-                  } ${inPlan ? "bg-[#0e0f12]" : "bg-transparent"} ${
-                    dragOverDate === date ? "bg-blue-950/40 ring-1 ring-inset ring-blue-500/60" : ""
-                  } ${isToday ? "ring-1 ring-inset ring-white/40" : ""}`}
-                >
-                  <div className="flex items-center justify-between px-0.5">
+                    setSelectedDate(date)
+                  }
+                }}
+                onDragOver={(e) => {
+                  if (date < plan.startDate) return
+                  e.preventDefault()
+                  e.dataTransfer.dropEffect = "move"
+                  if (dragOverDate !== date) setDragOverDate(date)
+                }}
+                onDragLeave={() => setDragOverDate((d) => (d === date ? null : d))}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  setDragOverDate(null)
+                  const itemId = e.dataTransfer.getData("text/plain")
+                  if (itemId) moveItem(itemId, date)
+                }}
+                className={`min-h-[72px] md:min-h-[104px] rounded-xl border border-b-4 p-1.5 md:p-2 flex flex-col gap-1 text-left transition cursor-pointer ${
+                  !inMonth ? "opacity-30 pointer-events-none" : ""
+                } ${
+                  state.allDone
+                    ? "bg-amber-950/50 border-amber-600/70"
+                    : inPlan
+                    ? "bg-[#0e0f12] border-zinc-800 hover:border-zinc-600"
+                    : "bg-transparent border-zinc-900"
+                } ${isSelected ? "!border-sky-500 ring-2 ring-sky-500/40" : ""} ${
+                  dragOverDate === date ? "!border-sky-400 bg-sky-950/40" : ""
+                } ${showMissed && !state.missed && inMonth ? "opacity-40" : ""}`}
+              >
+                <div className="flex items-center justify-between gap-1">
+                  {isToday ? (
+                    <span className="text-[10px] font-extrabold uppercase tracking-wide bg-orange-500 text-black rounded-md px-1.5 py-0.5">
+                      Today
+                    </span>
+                  ) : (
                     <span
-                      className={`text-[11px] font-semibold ${
-                        isToday ? "bg-white text-black rounded px-1.5" : "text-zinc-500"
+                      className={`text-xs font-bold flex items-center gap-1 ${
+                        state.allDone ? "text-amber-300" : state.missed ? "text-red-400" : "text-zinc-400"
                       }`}
                     >
+                      {state.allDone && <Check className="w-3 h-3 stroke-[3]" />}
                       {Number(date.slice(8))}
                     </span>
-                    {isToday && <span className="text-[9px] font-bold uppercase tracking-wide text-white">Today</span>}
-                  </div>
-                  {items.map((item) => renderCard(item, { compact: true, inCalendar: true }))}
-                  {goals.map((goal) => {
-                    const done = checked.has(goal.id)
-                    const canTick = date <= today
+                  )}
+                  {pendingGoals > 0 && date <= today && <Target className="w-3 h-3 text-amber-400" aria-label="Personal goal due" />}
+                </div>
+
+                {/* Desktop: topic names with a colour stripe. Mobile: dots. */}
+                <div className="hidden md:flex flex-col gap-1">
+                  {state.items.map((item) => {
+                    const done = completedIds.has(item.topicId)
                     return (
-                      <button
-                        key={goal.id}
-                        onClick={() => canTick && toggleGoal(goal.id, date, !done)}
-                        disabled={!canTick}
-                        className={`w-full flex items-center gap-1 rounded-md px-1.5 py-0.5 text-left text-[10px] transition disabled:cursor-default ${
-                          done
-                            ? "text-emerald-300/80 line-through"
-                            : showMissed
-                            ? "text-amber-200/30"
-                            : "text-amber-200/90 hover:bg-amber-950/40"
-                        }`}
-                        title={canTick ? (done ? "Mark as not done" : "Mark as done") : "Personal goal"}
+                      <div
+                        key={item.id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", item.id)
+                          e.dataTransfer.effectAllowed = "move"
+                        }}
+                        title={`${topicsById.get(item.topicId)?.title} · drag to move`}
+                        className="flex items-stretch gap-1.5 cursor-grab active:cursor-grabbing"
                       >
-                        {done ? <CheckCircle2 className="w-3 h-3 shrink-0" /> : <Target className="w-3 h-3 shrink-0" />}
-                        <span className="truncate">{goal.title}</span>
-                      </button>
+                        <span className={`w-[3px] shrink-0 rounded-full ${itemColor(item)}`} aria-hidden="true" />
+                        <span
+                          className={`text-[11px] leading-snug line-clamp-2 ${
+                            done ? "text-zinc-500 line-through" : "text-zinc-100"
+                          }`}
+                        >
+                          {topicsById.get(item.topicId)?.title}
+                        </span>
+                      </div>
                     )
                   })}
                 </div>
-              )
-            })}
-          </div>
+                <div className="flex md:hidden flex-wrap gap-1 mt-auto">
+                  {state.items.map((item) => (
+                    <span
+                      key={item.id}
+                      className={`w-2 h-2 rounded-full ${completedIds.has(item.topicId) ? "bg-zinc-600" : itemColor(item)}`}
+                      aria-hidden="true"
+                    />
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 px-1 text-[11px] text-zinc-400">
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-amber-500" /> Day completed</span>
+          <span className="flex items-center gap-1.5"><span className="w-[3px] h-3 rounded-full bg-blue-500" /> Compulsory</span>
+          {plan.tracks.map((t) => (
+            <span key={t} className="flex items-center gap-1.5">
+              <span className={`w-[3px] h-3 rounded-full ${TRACK_COLORS[t].bar}`} /> {t}
+            </span>
+          ))}
+          <span className="text-red-400">Red date = missed</span>
+          <span className="text-zinc-500">· Drag a topic onto another day to move it</span>
         </div>
       </div>
 
-      <p className="text-[11px] text-zinc-500 flex items-center gap-1.5">
-        <FileText className="w-3 h-3" /> Click a topic title to open its notes.
-      </p>
+      {/* Selected day */}
+      <div className="bg-[#121316] rounded-2xl border border-zinc-800/80 p-4 sm:p-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+          <h3 className="text-lg font-extrabold text-white">
+            {selected === today ? "Today · " : ""}
+            {selLabel}
+          </h3>
+          <span className="text-xs text-zinc-400">
+            {sel.items.length || sel.goals.length ? `Day ${selDay} of your plan` : "Nothing planned"}
+          </span>
+        </div>
+
+        {sel.items.length === 0 && sel.goals.length === 0 ? (
+          <p className="text-sm text-zinc-400">A free day. Pick another date, or drag a topic here to plan it.</p>
+        ) : (
+          <div className="space-y-2">
+            {sel.items.map((item) => {
+              const topic = topicsById.get(item.topicId)!
+              const done = completedIds.has(item.topicId)
+              const track = topicTrack(topic.roles, plan.tracks)
+              return (
+                <div
+                  key={item.id}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("text/plain", item.id)
+                    e.dataTransfer.effectAllowed = "move"
+                  }}
+                  className="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 border-b-4 bg-[#0e0f12]"
+                >
+                  <span
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white ${
+                      done ? "bg-emerald-500" : itemColor(item)
+                    }`}
+                  >
+                    {done ? <Check className="w-5 h-5 stroke-[3]" /> : item.kind === "COMPULSORY" ? <Star className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <button
+                      onClick={() => onOpenNotes(topic)}
+                      className={`text-sm font-bold text-left hover:underline ${done ? "text-zinc-400 line-through" : "text-white"}`}
+                    >
+                      {topic.title}
+                    </button>
+                    <p className="text-[11px] text-zinc-400">
+                      {item.kind === "COMPULSORY" ? "Compulsory" : track || "Career track"} · +{XP_RULES.topic} XP
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => onSetTopicCompleted(item.topicId, !done)}
+                    className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                      done
+                        ? "bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700"
+                        : "bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-700 border-b-4"
+                    }`}
+                  >
+                    {done ? "Undo" : "Done"}
+                  </button>
+                </div>
+              )
+            })}
+            {sel.goals.map((goal) => {
+              const done = sel.checked.has(goal.id)
+              const canTick = selected <= today
+              return (
+                <div key={goal.id} className="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 border-b-4 bg-[#0e0f12]">
+                  <span
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white ${done ? "bg-emerald-500" : "bg-amber-600"}`}
+                  >
+                    {done ? <Check className="w-5 h-5 stroke-[3]" /> : <Target className="w-5 h-5" />}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-bold ${done ? "text-zinc-400 line-through" : "text-white"}`}>{goal.title}</p>
+                    <p className="text-[11px] text-zinc-400">Personal goal · +{XP_RULES.goal} XP</p>
+                  </div>
+                  {canTick && (
+                    <button
+                      onClick={() => toggleGoal(goal.id, selected, !done)}
+                      className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                        done
+                          ? "bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700"
+                          : "bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-700 border-b-4"
+                      }`}
+                    >
+                      {done ? "Undo" : "Done"}
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+            {!sel.allDone && selPendingXp > 0 && (
+              <button
+                onClick={finishDay}
+                className="w-full mt-1 py-3 rounded-xl text-sm font-extrabold uppercase tracking-wide bg-emerald-500 hover:bg-emerald-400 text-black border-b-4 border-emerald-700 active:border-b-0 active:translate-y-0.5 flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" /> I studied everything +{selPendingXp} XP
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

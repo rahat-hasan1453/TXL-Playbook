@@ -252,6 +252,10 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
     sel.items.filter((i) => !completedIds.has(i.topicId)).length * XP_RULES.topic +
     sel.goals.filter((g) => !sel.checked.has(g.id)).length * XP_RULES.goal
 
+  const pendingCount =
+    sel.items.filter((i) => !completedIds.has(i.topicId)).length +
+    (selected <= today ? sel.goals.filter((g) => !sel.checked.has(g.id)).length : 0)
+
   const finishDay = () => {
     sel.items.filter((i) => !completedIds.has(i.topicId)).forEach((i) => onSetTopicCompleted(i.topicId, true))
     if (selected <= today) sel.goals.filter((g) => !sel.checked.has(g.id)).forEach((g) => toggleGoal(g.id, selected, true))
@@ -601,7 +605,8 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
                 </div>
               )
             })}
-            {!sel.allDone && selPendingXp > 0 && (
+            {/* "Studied everything" only helps when more than one thing is still open */}
+            {pendingCount > 1 && selPendingXp > 0 && (
               <button
                 onClick={finishDay}
                 className="w-full mt-1 py-3 rounded-xl text-sm font-extrabold uppercase tracking-wide bg-emerald-500 hover:bg-emerald-400 text-black border-b-4 border-emerald-700 active:border-b-0 active:translate-y-0.5 flex items-center justify-center gap-2"

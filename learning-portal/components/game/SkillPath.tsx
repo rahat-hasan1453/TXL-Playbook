@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { ArrowDown, Check, FileText, Play, Star, Target, Trophy, Undo2, X } from "lucide-react"
+import { Check, FileText, Play, Star, Target, Trophy, Undo2, X } from "lucide-react"
 import type { Domain, Topic } from "@/lib/curriculumData"
 import { DAILY_GOAL_OPTIONS, GameSummary, LeaderboardEntry, XP_RULES } from "@/lib/gamification"
 import { LearningPlan, addDays, todayIn } from "@/lib/learning-plan"
@@ -382,14 +382,6 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
               {doneCount} of {ordered.length} topics · {plan.tracks.join(" + ")}
             </p>
           </div>
-          {currentTopic && (
-            <button
-              onClick={jumpToCurrent}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-black text-xs font-bold shadow"
-            >
-              <ArrowDown className="w-3.5 h-3.5" /> Continue: {currentTopic.title}
-            </button>
-          )}
         </div>
 
         <div ref={trackRef} className="path-doodle relative space-y-8 rounded-3xl px-2 sm:px-4 py-4">
@@ -604,6 +596,21 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
 
       {/* ---------- sidebar ---------- */}
       <aside className="w-full lg:w-80 shrink-0 lg:sticky lg:top-24 space-y-4" aria-label="Progress">
+        {currentTopic && (
+          <button
+            onClick={jumpToCurrent}
+            className="w-full text-left bg-[#121316] border border-zinc-800/80 border-b-4 hover:border-zinc-600 rounded-2xl p-4 flex items-center gap-3 transition"
+          >
+            <span className="w-11 h-11 rounded-xl bg-blue-950/60 border border-blue-800/60 text-blue-300 flex items-center justify-center shrink-0">
+              <Play className="w-5 h-5 fill-current" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[11px] font-bold uppercase tracking-wide text-zinc-400">Continue</span>
+              <span className="block text-sm font-bold text-white truncate">{currentTopic.title}</span>
+            </span>
+          </button>
+        )}
+
         <div className="bg-[#121316] border border-zinc-800/80 rounded-2xl p-5 flex items-center gap-4">
           <span className="w-12 h-12 rounded-xl bg-amber-950/50 border border-amber-700/60 flex items-center justify-center shrink-0">
             <Trophy className="w-6 h-6 text-amber-400" />

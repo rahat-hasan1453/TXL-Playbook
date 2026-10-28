@@ -93,6 +93,8 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
   const [summary, setSummary] = useState<GameSummary | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
   const [me, setMe] = useState<LeaderboardEntry | null>(null)
+  // Week currently scrolled into view; the left card follows it
+  const [viewWeek, setViewWeek] = useState<number | null>(null)
   const pathRef = useRef<HTMLElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const [connector, setConnector] = useState<{
@@ -228,6 +230,21 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
     return () => ro.disconnect()
   }, [weeks, progressState])
 
+  useEffect(() => {
+    const root = trackRef.current
+    if (!root) return
+    const io = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting)
+        if (visible.length) setViewWeek(Number((visible[0].target as HTMLElement).dataset.week))
+      },
+      // A thin band across the middle of the screen decides which week is "in view"
+      { rootMargin: "-45% 0px -50% 0px" }
+    )
+    root.querySelectorAll<HTMLElement>("[data-week]").forEach((el) => io.observe(el))
+    return () => io.disconnect()
+  }, [weeks])
+
   const setDailyGoal = (dailyGoal: number) => {
     fetch("/api/game", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dailyGoal }) })
       .then((res) => (res.ok ? res.json() : null))
@@ -264,10 +281,12 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
   // The running week: the one holding today, or the next week with something left to do
   const todayDay = Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${plan.startDate}T00:00:00Z`)) / 86_400_000) + 1
   const runningNo = Math.max(1, Math.ceil(todayDay / 7))
-  const running =
+  const runningWeek =
     weeks.find((w) => w.week === runningNo) ||
     weeks.find((w) => w.steps.some((st) => st.nodes.some((n) => !isDone(n.topic.id)))) ||
     weeks[weeks.length - 1]
+  const running = weeks.find((w) => w.week === viewWeek) || runningWeek
+  const isRunning = running?.week === runningWeek?.week
   const runStart = running ? addDays(plan.startDate, (running.week - 1) * 7) : today
   const runDays = Array.from({ length: 7 }, (_, i) => addDays(runStart, i))
   const runTopics = running ? running.steps.flatMap((st) => st.nodes) : []
@@ -275,7 +294,21 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
 
   const weekCard = running && (
     <div className="bg-[#121316] border border-zinc-800/80 border-b-4 rounded-2xl p-4">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-zinc-400">This week</p>
+      <p className="text-[11px] font-bold uppercase tracking-wide text-zinc-400 flex items-center justify-between">
+        {isRunning ? "This week" : running.week < (runningWeek?.week || 0) ? "Earlier week" : "Coming up"}
+        {!isRunning && runningWeek && (
+          <button
+            onClick={() =>
+              trackRef.current
+                ?.querySelector(`[data-week="${runningWeek.week}"]`)
+                ?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }
+            className="normal-case tracking-normal text-[11px] font-semibold text-amber-300 hover:text-amber-200"
+          >
+            Back to this week
+          </button>
+        )}
+      </p>
       <div className="flex items-baseline justify-between mt-1">
         <h2 className="text-lg font-extrabold text-white">Week {running.week}</h2>
         <span className="text-xs font-bold text-zinc-300">
@@ -397,14 +430,23 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
             const weekTopics = week.steps.flatMap((st) => st.nodes)
             const weekDone = weekTopics.filter((n) => isDone(n.topic.id)).length
             return (
-              <div key={week.week}>
-                <div className="relative z-10 flex items-center gap-3 text-[11px] font-bold uppercase tracking-wide text-zinc-500">
-                  <span className="flex-1 h-px bg-zinc-800" />
-                  <span className="bg-[#0a0a0c] px-2">
-                    Week {week.week} · {dateLabel(week.steps[0].date)} – {dateLabel(week.steps[week.steps.length - 1].date)} ·{" "}
-                    {weekDone}/{weekTopics.length}
+              <div key={week.week} data-week={week.week} className="scroll-mt-24">
+                <div className="relative z-10 flex items-center gap-3">
+                  <span className="flex-1 h-0.5 rounded-full bg-zinc-700" />
+                  <span className="flex items-center gap-2 rounded-full bg-[#18191d] border border-zinc-700 border-b-4 px-4 py-1.5 text-xs font-extrabold uppercase tracking-wide text-zinc-100">
+                    Week {week.week}
+                    <span className="font-semibold normal-case tracking-normal text-zinc-400">
+                      {dateLabel(week.steps[0].date)} – {dateLabel(week.steps[week.steps.length - 1].date)}
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] ${
+                        weekDone === weekTopics.length ? "bg-emerald-500 text-black" : "bg-zinc-800 text-zinc-300"
+                      }`}
+                    >
+                      {weekDone}/{weekTopics.length}
+                    </span>
                   </span>
-                  <span className="flex-1 h-px bg-zinc-800" />
+                  <span className="flex-1 h-0.5 rounded-full bg-zinc-700" />
                 </div>
 
                 <ol className="flex flex-col items-center gap-[150px] pt-20 pb-24">

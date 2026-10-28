@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { ArrowDown, Check, FileText, Play, Star, Target, Trophy, Undo2, X } from "lucide-react"
 import type { Domain, Topic } from "@/lib/curriculumData"
 import { DAILY_GOAL_OPTIONS, GameSummary, LeaderboardEntry, XP_RULES } from "@/lib/gamification"
@@ -94,6 +94,14 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
   const [openId, setOpenId] = useState<string | null>(null)
   const [me, setMe] = useState<LeaderboardEntry | null>(null)
   const pathRef = useRef<HTMLElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [connector, setConnector] = useState<{
+    w: number
+    h: number
+    all: string
+    done: string
+    pairs: Array<{ x1: number; x2: number; y: number; done: boolean }>
+  } | null>(null)
 
   const loadSummary = useCallback(() => {
     fetch("/api/game")
@@ -152,6 +160,52 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
   }
   const doneCount = ordered.filter((t) => isDone(t.id)).length
 
+  // Draw the line that links each day's pair and runs from day to day.
+  // Measured from the DOM because node rows zig-zag and labels wrap.
+  useLayoutEffect(() => {
+    const root = trackRef.current
+    if (!root) return
+    const measure = () => {
+      const rb = root.getBoundingClientRect()
+      const steps = Array.from(root.querySelectorAll<HTMLElement>("[data-step]"))
+      const pts = steps.map((step) => {
+        const balls = Array.from(step.querySelectorAll<HTMLElement>("[data-ball]")).map((b) => b.getBoundingClientRect())
+        const xs = balls.map((b) => b.left + b.width / 2 - rb.left)
+        const y = balls.length ? balls[0].top + balls[0].height / 2 - rb.top : 0
+        return {
+          x: xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length),
+          y,
+          x1: Math.min(...xs),
+          x2: Math.max(...xs),
+          done: step.dataset.stepDone === "1",
+        }
+      })
+      const curve = (list: typeof pts) =>
+        list
+          .map((p, i) => {
+            if (i === 0) return `M ${p.x} ${p.y}`
+            const q = list[i - 1]
+            const my = (q.y + p.y) / 2
+            return `C ${q.x} ${my}, ${p.x} ${my}, ${p.x} ${p.y}`
+          })
+          .join(" ")
+      let doneUntil = -1
+      while (doneUntil + 1 < pts.length && pts[doneUntil + 1].done) doneUntil++
+      setConnector({
+        w: root.offsetWidth,
+        h: root.offsetHeight,
+        all: curve(pts),
+        // The finished stretch continues to the next (current) step, like a filled-in road
+        done: doneUntil >= 0 ? curve(pts.slice(0, Math.min(pts.length, doneUntil + 2))) : "",
+        pairs: pts.filter((p) => p.x2 - p.x1 > 1).map((p) => ({ x1: p.x1, x2: p.x2, y: p.y, done: p.done })),
+      })
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(root)
+    return () => ro.disconnect()
+  }, [weeks, progressState])
+
   const setDailyGoal = (dailyGoal: number) => {
     fetch("/api/game", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dailyGoal }) })
       .then((res) => (res.ok ? res.json() : null))
@@ -206,7 +260,32 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
           )}
         </div>
 
-        <div className="space-y-8">
+        <div ref={trackRef} className="path-doodle relative space-y-8 rounded-3xl px-2 sm:px-4 py-4">
+          {connector && (
+            <svg
+              className="absolute inset-0 pointer-events-none"
+              width={connector.w}
+              height={connector.h}
+              aria-hidden="true"
+            >
+              <path d={connector.all} fill="none" strokeWidth="8" strokeLinecap="round" className="stroke-zinc-800" />
+              {connector.done && (
+                <path d={connector.done} fill="none" strokeWidth="8" strokeLinecap="round" className="stroke-emerald-500" />
+              )}
+              {connector.pairs.map((p, i) => (
+                <line
+                  key={i}
+                  x1={p.x1}
+                  x2={p.x2}
+                  y1={p.y}
+                  y2={p.y}
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  className={p.done ? "stroke-emerald-500" : "stroke-zinc-800"}
+                />
+              ))}
+            </svg>
+          )}
           {weeks.map((week) => {
             const weekTopics = week.steps.flatMap((st) => st.nodes)
             const weekDone = weekTopics.filter((n) => isDone(n.topic.id)).length
@@ -250,13 +329,17 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
                         {step.firstOfDay && (
                           <span
                             className={`mb-9 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md ${
-                              isToday ? "bg-white text-black" : "text-zinc-500"
+                              isToday ? "bg-white text-black" : "bg-[#0a0a0c] text-zinc-500"
                             }`}
                           >
                             {isToday ? "Today" : `Day ${step.day}`} · {dateLabel(step.date)}
                           </span>
                         )}
-                        <div className="flex items-start gap-6">
+                        <div
+                          className="flex items-start gap-6"
+                          data-step
+                          data-step-done={step.nodes.every((n) => isDone(n.topic.id)) ? "1" : "0"}
+                        >
                           {step.nodes.map((node) => {
                             const topic = node.topic
                             const done = isDone(topic.id)
@@ -286,12 +369,13 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
                                     </span>
                                   )}
                                   <span
+                                    data-ball
                                     className={`w-16 h-16 rounded-full flex items-center justify-center border-b-4 transition-transform group-hover:-translate-y-0.5 ${
                                       done
                                         ? "bg-emerald-500 border-emerald-700 text-white on-solid"
                                         : current
                                         ? `${color} border-black/30 text-white on-solid node-current`
-                                        : `${color} border-black/30 text-white on-solid opacity-35`
+                                        : `${color} border-black/30 text-white on-solid brightness-[0.55] saturate-50`
                                     } ${isOpen ? "ring-4 ring-white/30" : ""}`}
                                   >
                                     {done ? (

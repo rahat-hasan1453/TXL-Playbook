@@ -98,9 +98,8 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
   const [connector, setConnector] = useState<{
     w: number
     h: number
-    all: string
-    done: string
-    pairs: Array<{ x1: number; x2: number; y: number; done: boolean }>
+    loops: Array<{ d: string; state: "done" | "started" | "todo" }>
+    links: Array<{ d: string; started: boolean }>
   } | null>(null)
 
   const loadSummary = useCallback(() => {
@@ -168,36 +167,59 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
     const measure = () => {
       const rb = root.getBoundingClientRect()
       const steps = Array.from(root.querySelectorAll<HTMLElement>("[data-step]"))
-      const pts = steps.map((step) => {
+      const shapes = steps.map((step, i) => {
         const balls = Array.from(step.querySelectorAll<HTMLElement>("[data-ball]")).map((b) => b.getBoundingClientRect())
         const xs = balls.map((b) => b.left + b.width / 2 - rb.left)
-        const y = balls.length ? balls[0].top + balls[0].height / 2 - rb.top : 0
-        return {
-          x: xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length),
-          y,
-          x1: Math.min(...xs),
-          x2: Math.max(...xs),
-          done: step.dataset.stepDone === "1",
-        }
+        const ballY = balls.length ? balls[0].top + balls[0].height / 2 - rb.top : 0
+        const cx = (Math.min(...xs) + Math.max(...xs)) / 2
+        const cy = ballY + 14 // a little low, so the loop also wraps the topic names
+        const rx = (Math.max(...xs) - Math.min(...xs)) / 2 + 74
+        const ry = 66
+        const done = step.dataset.stepDone === "1"
+        const started = step.dataset.stepStarted === "1"
+        return { cx, cy, rx, ry, done, started, seed: i + 1 }
       })
-      const curve = (list: typeof pts) =>
-        list
-          .map((p, i) => {
-            if (i === 0) return `M ${p.x} ${p.y}`
-            const q = list[i - 1]
-            const my = (q.y + p.y) / 2
-            return `C ${q.x} ${my}, ${p.x} ${my}, ${p.x} ${p.y}`
-          })
-          .join(" ")
-      let doneUntil = -1
-      while (doneUntil + 1 < pts.length && pts[doneUntil + 1].done) doneUntil++
+
+      // A hand-drawn looking loop: an ellipse whose radius wobbles a little at 8 points,
+      // smoothed into a closed curve. Seeded per step so it doesn't change between renders.
+      const loopPath = (cx: number, cy: number, rx: number, ry: number, seed: number) => {
+        let k = seed * 97
+        const rnd = () => ((k = (k * 9301 + 49297) % 233280), k / 233280)
+        const n = 8
+        const pts = Array.from({ length: n }, (_, i) => {
+          const t = (i / n) * Math.PI * 2
+          const f = 0.9 + rnd() * 0.2
+          return [cx + Math.cos(t) * rx * f, cy + Math.sin(t) * ry * f]
+        })
+        let d = `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`
+        for (let i = 0; i < n; i++) {
+          const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n]
+          const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6]
+          const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6]
+          d += ` C ${c1[0].toFixed(1)} ${c1[1].toFixed(1)}, ${c2[0].toFixed(1)} ${c2[1].toFixed(1)}, ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`
+        }
+        return `${d} Z`
+      }
+
       setConnector({
         w: root.offsetWidth,
         h: root.offsetHeight,
-        all: curve(pts),
-        // The finished stretch continues to the next (current) step, like a filled-in road
-        done: doneUntil >= 0 ? curve(pts.slice(0, Math.min(pts.length, doneUntil + 2))) : "",
-        pairs: pts.filter((p) => p.x2 - p.x1 > 1).map((p) => ({ x1: p.x1, x2: p.x2, y: p.y, done: p.done })),
+        loops: shapes.map((sh) => ({
+          d: loopPath(sh.cx, sh.cy, sh.rx, sh.ry, sh.seed),
+          state: sh.done ? "done" : sh.started ? "started" : "todo",
+        })),
+        // Winding trail from the bottom of one day's loop to the top of the next, swinging left/right
+        links: shapes.slice(0, -1).map((a, i) => {
+          const b = shapes[i + 1]
+          const y1 = a.cy + a.ry * 0.95
+          const y2 = b.cy - b.ry * 0.95
+          const mid = (y1 + y2) / 2
+          const swing = i % 2 ? -110 : 110
+          return {
+            d: `M ${a.cx} ${y1} C ${a.cx + swing} ${y1 + 40}, ${a.cx + swing} ${mid - 10}, ${(a.cx + b.cx) / 2} ${mid} S ${b.cx - swing} ${y2 - 40}, ${b.cx} ${y2}`,
+            started: a.started || a.done,
+          }
+        }),
       })
     }
     measure()
@@ -268,20 +290,28 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
               height={connector.h}
               aria-hidden="true"
             >
-              <path d={connector.all} fill="none" strokeWidth="8" strokeLinecap="round" className="stroke-zinc-800" />
-              {connector.done && (
-                <path d={connector.done} fill="none" strokeWidth="8" strokeLinecap="round" className="stroke-emerald-500" />
-              )}
-              {connector.pairs.map((p, i) => (
-                <line
-                  key={i}
-                  x1={p.x1}
-                  x2={p.x2}
-                  y1={p.y}
-                  y2={p.y}
-                  strokeWidth="8"
+              {connector.links.map((l, i) => (
+                <path
+                  key={`l${i}`}
+                  d={l.d}
+                  fill="none"
+                  strokeWidth="2.5"
+                  strokeDasharray="7 7"
                   strokeLinecap="round"
-                  className={p.done ? "stroke-emerald-500" : "stroke-zinc-800"}
+                  className={l.started ? "stroke-emerald-500" : "stroke-zinc-600"}
+                />
+              ))}
+              {connector.loops.map((l, i) => (
+                <path
+                  key={`o${i}`}
+                  d={l.d}
+                  fill="none"
+                  strokeWidth="2.5"
+                  strokeDasharray="7 7"
+                  strokeLinecap="round"
+                  className={
+                    l.state === "done" ? "stroke-emerald-500" : l.state === "started" ? "stroke-emerald-300/70" : "stroke-zinc-600"
+                  }
                 />
               ))}
             </svg>
@@ -313,7 +343,7 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
                   </span>
                 </div>
 
-                <ol className="flex flex-col items-center gap-12 py-10">
+                <ol className="flex flex-col items-center gap-[150px] pt-20 pb-24">
                   {week.steps.map((step) => {
                     stepIndex++
                     const isToday = step.date === today
@@ -339,6 +369,7 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
                           className="flex items-start gap-6"
                           data-step
                           data-step-done={step.nodes.every((n) => isDone(n.topic.id)) ? "1" : "0"}
+                          data-step-started={step.nodes.some((n) => isDone(n.topic.id)) ? "1" : "0"}
                         >
                           {step.nodes.map((node) => {
                             const topic = node.topic

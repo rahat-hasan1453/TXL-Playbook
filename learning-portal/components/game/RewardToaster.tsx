@@ -48,11 +48,6 @@ export default function RewardToaster() {
               ⬆️ Level {reward.levelUp.level}: {reward.levelUp.title}
             </p>
           )}
-          {reward.newBadges.map((b) => (
-            <p key={b.id} className="mt-2 text-xs font-semibold text-sky-300">
-              {b.emoji} Badge unlocked: {b.title}
-            </p>
-          ))}
         </div>
       ))}
     </div>

@@ -697,33 +697,6 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
             </p>
           </div>
         )}
-
-        {summary && (
-          <div className="bg-[#121316] border border-zinc-800/80 rounded-2xl p-5">
-            <h3 className="text-sm font-bold text-white">
-              Badges{" "}
-              <span className="text-zinc-500 font-medium">
-                {summary.badges.filter((b) => b.earned).length}/{summary.badges.length}
-              </span>
-            </h3>
-            <ul className="grid grid-cols-4 gap-2 mt-3">
-              {summary.badges.map((b) => (
-                <li
-                  key={b.id}
-                  title={`${b.title}: ${b.description}${b.earned ? "" : " (locked)"}`}
-                  className={`aspect-square rounded-xl border flex items-center justify-center text-2xl ${
-                    b.earned ? "bg-amber-950/40 border-amber-700/60" : "bg-zinc-900 border-zinc-800 grayscale opacity-40"
-                  }`}
-                >
-                  <span aria-hidden="true">{b.emoji}</span>
-                  <span className="sr-only">
-                    {b.title}, {b.earned ? "earned" : "locked"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </aside>
     </div>
   )

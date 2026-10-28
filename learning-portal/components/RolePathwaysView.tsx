@@ -367,7 +367,10 @@ export default function RolePathwaysView({
                 : 0
 
               return (
-                <div key={domain.id} className="rounded-2xl overflow-hidden border border-zinc-800/80 bg-[#121316]">
+                <div
+                  key={domain.id}
+                  className={`rounded-2xl overflow-hidden bg-[#121316] border-2 border-b-[5px] ${activeColor.card.split(" ")[0]} ${activeColor.edge}`}
+                >
                   {/* Unit banner */}
                   <div
                     role="button"
@@ -380,26 +383,28 @@ export default function RolePathwaysView({
                         toggleDomainCollapse(domain.id)
                       }
                     }}
-                    className={`${activeColor.banner} border-b-4 border-black/25 px-4 sm:px-5 py-4 flex items-center gap-4 cursor-pointer select-none text-white on-solid`}
+                    className={`px-4 sm:px-5 py-4 flex items-center gap-4 cursor-pointer select-none hover:bg-zinc-800/30 transition ${
+                      isCollapsed ? "" : "border-b border-zinc-800/80"
+                    }`}
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-white/75">
+                      <p className={`text-[11px] font-bold uppercase tracking-wide ${activeColor.text}`}>
                         Unit {domainIndex + 1}
                         {domain.compulsoryCount > 0 &&
                           ` · ${domain.compulsoryCount === domain.totalRoleTopics ? "All compulsory" : `${domain.compulsoryCount} compulsory`}`}
                       </p>
-                      <h3 className="text-base sm:text-lg font-extrabold truncate">{domain.name}</h3>
-                      <p className="text-xs text-white/75 line-clamp-1">{domain.focus}</p>
+                      <h3 className="text-base sm:text-lg font-extrabold text-white truncate">{domain.name}</h3>
+                      <p className="text-xs text-zinc-400 line-clamp-1">{domain.focus}</p>
                     </div>
                     <div className="hidden sm:block w-28">
-                      <div className="h-2.5 rounded-full bg-black/25 overflow-hidden">
-                        <div className="h-full rounded-full bg-white/90 transition-all" style={{ width: `${domainPct}%` }} />
+                      <div className="h-2.5 rounded-full bg-zinc-800 overflow-hidden">
+                        <div className={`h-full rounded-full ${activeColor.bar} transition-all`} style={{ width: `${domainPct}%` }} />
                       </div>
                     </div>
-                    <span className="shrink-0 text-xs font-bold bg-black/20 rounded-lg px-2.5 py-1">
+                    <span className={`shrink-0 text-xs font-bold rounded-full border px-2.5 py-0.5 ${activeColor.chip}`}>
                       {domain.completedInDomain}/{domain.totalRoleTopics}
                     </span>
-                    <span className="w-8 h-8 rounded-lg bg-black/20 flex items-center justify-center shrink-0">
+                    <span className="w-8 h-8 rounded-lg bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 flex items-center justify-center shrink-0">
                       {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </span>
                   </div>

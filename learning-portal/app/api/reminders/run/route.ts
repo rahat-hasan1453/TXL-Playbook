@@ -17,7 +17,9 @@ function hasCronSecret(req: Request): boolean {
 // Vercel Cron calls this with GET and "Authorization: Bearer <CRON_SECRET>"
 export async function GET(req: Request) {
   if (!hasCronSecret(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  return NextResponse.json(await runDueReminders())
+  // Vercel's free plan runs this once a day, so it can't honour each learner's reminder time:
+  // everyone who hasn't had today's reminder gets it on that run.
+  return NextResponse.json(await runDueReminders(new Date(), { ignoreTime: true }))
 }
 
 /**

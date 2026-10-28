@@ -170,7 +170,7 @@ const RETRY_AFTER_MS = 15 * 60 * 1000
 const lastFailureAt = new Map<string, number>()
 
 /** Sends today's reminder to every learner whose reminder time has passed and who hasn't had one yet. */
-export async function runDueReminders(now: Date = new Date()) {
+export async function runDueReminders(now: Date = new Date(), options: { ignoreTime?: boolean } = {}) {
   if (runInFlight) return { sent: 0 }
   runInFlight = true
   let sent = 0
@@ -178,7 +178,7 @@ export async function runDueReminders(now: Date = new Date()) {
     for (const plan of await getAllPlans()) {
       const local = localParts(plan.timezone, now)
       if (local.date < plan.startDate || local.date > plan.endDate) continue
-      if (local.time < plan.reminderTime || plan.lastReminderDate === local.date) continue
+      if ((!options.ignoreTime && local.time < plan.reminderTime) || plan.lastReminderDate === local.date) continue
       if (now.getTime() - (lastFailureAt.get(plan.email) || 0) < RETRY_AFTER_MS) continue
 
       const result = await sendDailyReminder(plan, local.date)

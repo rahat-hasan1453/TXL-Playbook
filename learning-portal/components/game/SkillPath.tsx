@@ -367,6 +367,15 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
   )
 
   return (
+    <div className="space-y-5">
+      {/* Heading spans all columns so the side cards start level with the path */}
+      <div>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Your Learning Path</h1>
+        <p className="text-sm text-zinc-400 mt-0.5">
+          {doneCount} of {ordered.length} topics · {plan.tracks.join(" + ")}
+        </p>
+      </div>
+
     <div className="flex flex-col lg:flex-row gap-6 items-start">
       {/* ---------- running week ---------- */}
       <aside className="w-full lg:w-56 shrink-0 lg:sticky lg:top-24" aria-label="This week">
@@ -375,15 +384,6 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
 
       {/* ---------- path ---------- */}
       <section ref={pathRef} className="flex-1 min-w-0 w-full" aria-label="Learning path">
-        <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
-          <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Your Learning Path</h1>
-            <p className="text-sm text-zinc-400 mt-0.5">
-              {doneCount} of {ordered.length} topics · {plan.tracks.join(" + ")}
-            </p>
-          </div>
-        </div>
-
         <div ref={trackRef} className="path-doodle relative space-y-8 rounded-3xl px-2 sm:px-4 py-4">
           {connector && (
             <svg
@@ -457,7 +457,7 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
                         {step.firstOfDay && (
                           // Beside the loop on wide screens, above the pair on narrow ones
                           <span
-                            className={`mb-9 md:mb-0 md:absolute md:left-full md:ml-[92px] md:top-8 md:-translate-y-1/2 whitespace-nowrap text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md ${
+                            className={`mb-9 2xl:mb-0 2xl:absolute 2xl:left-full 2xl:ml-[92px] 2xl:top-8 2xl:-translate-y-1/2 whitespace-nowrap text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md ${
                               isToday ? "bg-white text-black" : "bg-[#0a0a0c] text-zinc-400 border border-zinc-800"
                             }`}
                           >
@@ -705,6 +705,7 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
           </div>
         )}
       </aside>
+    </div>
     </div>
   )
 }

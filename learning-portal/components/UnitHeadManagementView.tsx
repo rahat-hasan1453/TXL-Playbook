@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect } from "react"
 import { Domain, Topic } from "@/lib/curriculumData"
 import { UserSession } from "@/lib/auth"
 import { NoteViewer } from "@/components/NotesEditor"
+import TopicGuideModal from "@/components/TopicGuideModal"
 import { noteToPlainText } from "@/lib/note-content"
 import {
   ShieldAlert,
@@ -61,6 +62,7 @@ export default function UnitHeadManagementView({
 }: UnitHeadManagementViewProps) {
   // Main Sub-tabs: Leaderboard & Audits vs Curriculum Manager
   const [activeSubTab, setActiveSubTab] = useState<"audits" | "curriculum">("audits")
+  const [guideTopic, setGuideTopic] = useState<Topic | null>(null)
 
   // View mode in the Audits tab: "ALL_LEARNERS" (Org-Wide Module % Adoption) vs "INDIVIDUAL_AUDIT"
   const [auditViewMode, setAuditViewMode] = useState<"ALL_LEARNERS" | "INDIVIDUAL_AUDIT">("ALL_LEARNERS")
@@ -1130,6 +1132,13 @@ export default function UnitHeadManagementView({
 
                         <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-end gap-2">
                           <button
+                            onClick={() => setGuideTopic(topic)}
+                            className="px-2.5 py-1.5 rounded-lg bg-blue-950/40 hover:bg-blue-950/70 text-blue-200 border border-blue-800/50 text-xs font-medium transition flex items-center gap-1.5"
+                          >
+                            <BookOpen className="w-3.5 h-3.5" />
+                            <span>Guide</span>
+                          </button>
+                          <button
                             onClick={() => openEditModal(topic)}
                             className="px-2.5 py-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/60 text-xs font-medium transition flex items-center gap-1.5"
                           >
@@ -1465,6 +1474,7 @@ export default function UnitHeadManagementView({
           </div>
         </div>
       )}
+    {guideTopic && <TopicGuideModal topic={guideTopic} onClose={() => setGuideTopic(null)} />}
     </div>
   )
 }

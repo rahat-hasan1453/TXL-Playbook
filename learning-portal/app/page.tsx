@@ -679,6 +679,7 @@ export default function TXLLearningPortal() {
                 <RolePathwaysView
                   progressState={progressState}
                   onToggleStatus={handleToggleStatus}
+                  onSetTopicCompleted={handleSetTopicCompleted}
                   userNotes={userNotes}
                   onOpenNotes={handleOpenNotes}
                   onOpenShare={handleOpenShare}

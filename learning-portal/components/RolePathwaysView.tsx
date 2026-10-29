@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react"
 import { CURRICULUM_DOMAINS, Domain, Topic } from "@/lib/curriculumData"
 import { noteToPlainText } from "@/lib/note-content"
 import { COMPULSORY_COLOR, trackColor } from "@/lib/track-colors"
+import TopicGuideModal from "@/components/TopicGuideModal"
 import {
   Compass,
   Briefcase,
@@ -23,6 +24,7 @@ import {
   ChevronRight,
   BookOpen,
   Star,
+  Undo2,
   X
 } from "lucide-react"
 
@@ -93,6 +95,7 @@ export const ROLE_TRACKS: RoleTrackConfig[] = [
 interface RolePathwaysViewProps {
   progressState: Record<string, "COMPLETED" | "IN_PROGRESS" | "NOT_STARTED" | undefined>
   onToggleStatus: (topicId: string) => void
+  onSetTopicCompleted?: (topicId: string, completed: boolean) => void
   userNotes: Record<string, string>
   onOpenNotes: (topic: Topic) => void
   onOpenShare: (topic: Topic) => void
@@ -104,6 +107,7 @@ interface RolePathwaysViewProps {
 export default function RolePathwaysView({
   progressState,
   onToggleStatus,
+  onSetTopicCompleted,
   userNotes,
   onOpenNotes,
   onOpenShare,
@@ -112,6 +116,7 @@ export default function RolePathwaysView({
   domains,
 }: RolePathwaysViewProps) {
   const activeDomains = useMemo(() => domains || CURRICULUM_DOMAINS, [domains])
+  const [guideTopic, setGuideTopic] = useState<Topic | null>(null)
 
   // Current role selection
   const [internalRoleKey, setInternalRoleKey] = useState<string>(activeRoleKey)
@@ -485,10 +490,13 @@ export default function RolePathwaysView({
 
                             <div className="mt-auto flex items-center gap-2">
                               <button
-                                onClick={() => onToggleStatus(topic.id)}
+                                onClick={() => {
+                                  if (!isCompleted && !isInProgress) onToggleStatus(topic.id)
+                                  setGuideTopic(topic)
+                                }}
                                 className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                                   isCompleted
-                                    ? "bg-transparent text-emerald-300 border border-emerald-700/70 border-b-4 hover:bg-emerald-950/30"
+                                    ? "bg-transparent text-emerald-300 border border-emerald-700/70 border-b-4 cursor-default"
                                     : isInProgress
                                     ? "bg-emerald-500 hover:bg-emerald-400 text-black border-b-4 border-emerald-700"
                                     : `${isBaseline ? COMPULSORY_COLOR.banner : own!.banner} text-white on-solid border-b-4 border-black/30 hover:brightness-110`
@@ -496,17 +504,33 @@ export default function RolePathwaysView({
                               >
                                 {isCompleted ? (
                                   <>
-                                    <CheckCircle2 className="w-3.5 h-3.5" /> Completed
+                                    <CheckCircle2 className="w-3.5 h-3.5" /> Read
                                   </>
                                 ) : isInProgress ? (
-                                  <>
-                                    <Check className="w-3.5 h-3.5 stroke-[3]" /> Mark done +10 XP
-                                  </>
+                                  <>Continue learning</>
                                 ) : (
                                   <>Start learning</>
                                 )}
                               </button>
+                              {isCompleted && onSetTopicCompleted && (
+                                <button
+                                  onClick={() => onSetTopicCompleted(topic.id, false)}
+                                  title="Undo: mark as not read"
+                                  aria-label={`Undo: mark ${topic.title} as not read`}
+                                  className="w-9 h-9 rounded-xl flex items-center justify-center border border-b-4 bg-zinc-800/60 text-zinc-300 border-zinc-700/60 hover:text-white transition"
+                                >
+                                  <Undo2 className="w-4 h-4" />
+                                </button>
+                              )}
                               <span className="flex-1" />
+                              <button
+                                onClick={() => setGuideTopic(topic)}
+                                title="Beginner guide with references, in English and Bangla · শুরুর গাইড"
+                                aria-label={`Beginner guide for ${topic.title}`}
+                                className="w-9 h-9 rounded-xl flex items-center justify-center border border-b-4 bg-blue-950/40 text-blue-300 border-blue-800/60 hover:text-white transition"
+                              >
+                                <BookOpen className="w-4 h-4" />
+                              </button>
                               <button
                                 onClick={() => onOpenNotes(topic)}
                                 title="Add or edit personal learning notes"
@@ -539,6 +563,15 @@ export default function RolePathwaysView({
           )}
         </div>
       </section>
+      {guideTopic && (
+        <TopicGuideModal
+          topic={guideTopic}
+          onClose={() => setGuideTopic(null)}
+          completed={progressState[guideTopic.id] === "COMPLETED"}
+          onSetCompleted={onSetTopicCompleted ? (d) => onSetTopicCompleted(guideTopic.id, d) : undefined}
+          xp={10}
+        />
+      )}
     </div>
   )
 }

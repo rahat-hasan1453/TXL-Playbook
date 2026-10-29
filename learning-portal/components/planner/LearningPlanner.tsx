@@ -1,7 +1,9 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import TopicGuideModal from "@/components/TopicGuideModal"
 import {
+  BookOpen,
   AlertTriangle,
   Bell,
   CalendarCheck,
@@ -66,6 +68,7 @@ function monthGrid(month: string): string[] {
 }
 
 export default function LearningPlanner({ domains, progressState, onSetTopicCompleted, onOpenNotes }: LearningPlannerProps) {
+  const [guideTopic, setGuideTopic] = useState<Topic | null>(null)
   const [plan, setPlan] = useState<LearningPlan | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
@@ -564,6 +567,14 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
                     </p>
                   </div>
                   <button
+                    onClick={() => setGuideTopic(topic)}
+                    title="Beginner guide · শুরুর গাইড"
+                    aria-label={`Beginner guide for ${topic.title}`}
+                    className="shrink-0 w-9 h-9 rounded-xl border border-b-4 border-blue-800/60 bg-blue-950/40 text-blue-300 hover:text-white flex items-center justify-center transition"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                  </button>
+                  <button
                     role="checkbox"
                     aria-checked={done}
                     aria-label={`${done ? "Mark not done" : "Mark done"}: ${topic.title}`}
@@ -625,6 +636,15 @@ export default function LearningPlanner({ domains, progressState, onSetTopicComp
           </div>
         )}
       </div>
+    {guideTopic && (
+      <TopicGuideModal
+        topic={guideTopic}
+        onClose={() => setGuideTopic(null)}
+        completed={progressState[guideTopic.id] === "COMPLETED"}
+        onSetCompleted={(d) => onSetTopicCompleted(guideTopic.id, d)}
+        xp={XP_RULES.topic}
+      />
+    )}
     </div>
   )
 }

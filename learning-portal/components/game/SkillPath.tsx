@@ -1,12 +1,13 @@
 "use client"
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { Check, FileText, Play, Star, Target, Trophy, Undo2, X } from "lucide-react"
+import { BookOpen, Check, FileText, Play, Star, Target, Trophy, Undo2, X } from "lucide-react"
 import type { Domain, Topic } from "@/lib/curriculumData"
 import { DAILY_GOAL_OPTIONS, GameSummary, LeaderboardEntry, XP_RULES } from "@/lib/gamification"
 import { LearningPlan, addDays, todayIn } from "@/lib/learning-plan"
 import { COMPULSORY_COLOR, topicTrack, trackColor } from "@/lib/track-colors"
 import { onReward } from "@/lib/reward-events"
+import TopicGuideModal from "@/components/TopicGuideModal"
 
 interface SkillPathProps {
   domains: Domain[]
@@ -92,6 +93,7 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
   const [plan, setPlan] = useState<LearningPlan | null | undefined>(undefined)
   const [summary, setSummary] = useState<GameSummary | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
+  const [guideTopic, setGuideTopic] = useState<Topic | null>(null)
   const [me, setMe] = useState<LeaderboardEntry | null>(null)
   // Week currently scrolled into view; the left card follows it
   const [viewWeek, setViewWeek] = useState<number | null>(null)
@@ -554,21 +556,28 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
                                     <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{topic.description}</p>
                                     <div className="mt-3 flex flex-col gap-2">
                                       {done ? (
-                                        <button
-                                          onClick={() => onSetTopicCompleted(topic.id, false)}
-                                          className="w-full px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 text-zinc-200 border border-zinc-700 hover:bg-zinc-700 flex items-center justify-center gap-1.5"
-                                        >
-                                          <Undo2 className="w-3.5 h-3.5" /> Mark as not done
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                          <button
+                                            onClick={() => setGuideTopic(topic)}
+                                            className="flex-1 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-950/40 text-emerald-300 border border-emerald-800/60 flex items-center justify-center gap-1.5"
+                                          >
+                                            <Check className="w-3.5 h-3.5 stroke-[3]" /> Read · view guide
+                                          </button>
+                                          <button
+                                            onClick={() => onSetTopicCompleted(topic.id, false)}
+                                            title="Undo: mark as not read"
+                                            aria-label="Undo: mark as not read"
+                                            className="w-9 h-9 rounded-xl border border-b-4 border-zinc-700/70 bg-zinc-800/80 text-zinc-300 hover:text-white flex items-center justify-center"
+                                          >
+                                            <Undo2 className="w-4 h-4" />
+                                          </button>
+                                        </div>
                                       ) : (
                                         <button
-                                          onClick={() => {
-                                            onSetTopicCompleted(topic.id, true)
-                                            setOpenId(null)
-                                          }}
+                                          onClick={() => setGuideTopic(topic)}
                                           className="w-full px-3 py-2.5 rounded-xl text-sm font-extrabold uppercase tracking-wide bg-emerald-500 hover:bg-emerald-400 text-black border-b-4 border-emerald-700 active:border-b-0 active:translate-y-0.5 flex items-center justify-center gap-1.5"
                                         >
-                                          <Check className="w-4 h-4 stroke-[3]" /> I studied this +{XP_RULES.topic} XP
+                                          <BookOpen className="w-4 h-4" /> Start learning
                                         </button>
                                       )}
                                       <button
@@ -706,6 +715,15 @@ export default function SkillPath({ domains, progressState, onSetTopicCompleted,
         )}
       </aside>
     </div>
+    {guideTopic && (
+      <TopicGuideModal
+        topic={guideTopic}
+        onClose={() => setGuideTopic(null)}
+        completed={isDone(guideTopic.id)}
+        onSetCompleted={(d) => onSetTopicCompleted(guideTopic.id, d)}
+        xp={XP_RULES.topic}
+      />
+    )}
     </div>
   )
 }

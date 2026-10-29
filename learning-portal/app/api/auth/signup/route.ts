@@ -41,8 +41,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Skipping Blocks is a local-dev/test convenience only; in production every account must be
+    // created in Blocks IAM, so a client-supplied viaBlocks=false is ignored.
+    const skipBlocks = viaBlocks === false && process.env.NODE_ENV !== "production"
+
     let blocksResult: unknown = null
-    if (viaBlocks) {
+    if (!skipBlocks) {
       try {
         blocksResult = await blocksClient.auth.signup({
           email: cleanEmail,
@@ -51,7 +55,20 @@ export async function POST(request: NextRequest) {
           lastName: lastName || "User",
         })
       } catch (err: unknown) {
-        console.warn("Blocks IAM signup notice (handled):", err)
+        // Never fall back to a local-only account: that would let an email that Blocks rejected
+        // (already registered, deactivated, invalid) log in anyway.
+        console.error("Blocks IAM signup failed:", err)
+        const message = err instanceof Error ? err.message : String(err)
+        if (/exist|already|duplicate|taken/i.test(message)) {
+          return NextResponse.json(
+            { error: "An account with this email already exists. Please sign in." },
+            { status: 409 }
+          )
+        }
+        return NextResponse.json(
+          { error: "We couldn't create your account. Please try again or contact your administrator." },
+          { status: 502 }
+        )
       }
     }
 

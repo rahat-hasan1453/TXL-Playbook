@@ -37,7 +37,6 @@ export default function LoginPage() {
   const [signupEmail, setSignupEmail] = useState("")
   const [signupPassword, setSignupPassword] = useState("")
   const [signupDiscipline, setSignupDiscipline] = useState("Product Engineer")
-  const [registerViaBlocks, setRegisterViaBlocks] = useState(true)
 
   // SELISE Blocks Hosted SSO Redirect
   const handleBlocksSso = async () => {
@@ -127,7 +126,6 @@ export default function LoginPage() {
           email: signupEmail,
           password: signupPassword,
           discipline: signupDiscipline,
-          viaBlocks: registerViaBlocks,
         }),
       })
 
@@ -438,25 +436,6 @@ export default function LoginPage() {
               <div className="p-2.5 bg-[#0a0a0c] border border-zinc-800/80 rounded-lg flex items-center gap-2 text-[11px] text-zinc-400">
                 <Lock className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                 <span>Account roles & permission tiers are provisioned centrally via SELISE Blocks IAM.</span>
-              </div>
-
-              {/* Register through SELISE Blocks Checkbox Option */}
-              <div className="p-3 bg-[#0a0a0c] border border-zinc-800 rounded-xl flex items-start gap-2.5">
-                <input
-                  type="checkbox"
-                  id="viaBlocks"
-                  checked={registerViaBlocks}
-                  onChange={(e) => setRegisterViaBlocks(e.target.checked)}
-                  className="mt-0.5 accent-blue-500 rounded cursor-pointer"
-                />
-                <label htmlFor="viaBlocks" className="text-xs text-zinc-300 cursor-pointer select-none">
-                  <span className="font-semibold text-white block">
-                    Register through SELISE Blocks IAM (Project d5e5c23b)
-                  </span>
-                  <span className="text-[11px] text-zinc-400">
-                    Creates an enterprise identity record on Blocks Cloud platform with verified permissions.
-                  </span>
-                </label>
               </div>
 
               {/* Submit Button */}

@@ -7,13 +7,15 @@ import LearningPlanner from "@/components/planner/LearningPlanner"
 import SkillPath from "./SkillPath"
 import Leaderboard from "./Leaderboard"
 
-type HubTab = "path" | "calendar" | "leaderboard"
+export type HubTab = "path" | "calendar" | "leaderboard"
 
-interface LearningHubProps {
+export interface LearningHubProps {
   domains: Domain[]
   progressState: Record<string, "COMPLETED" | "IN_PROGRESS">
   onSetTopicCompleted: (topicId: string, completed: boolean) => void
   onOpenNotes: (topic: Topic) => void
+  activeSubTab?: HubTab
+  onSubTabChange?: (tab: HubTab) => void
 }
 
 const TABS: Array<{ id: HubTab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
@@ -24,7 +26,16 @@ const TABS: Array<{ id: HubTab; label: string; icon: React.ComponentType<{ class
 
 /** Learner's home for learning: gamified path first, calendar and leaderboard alongside. */
 export default function LearningHub(props: LearningHubProps) {
-  const [tab, setTab] = useState<HubTab>("path")
+  const [internalTab, setInternalTab] = useState<HubTab>("path")
+  const tab = props.activeSubTab ?? internalTab
+
+  const handleTabSelect = (id: HubTab) => {
+    if (props.onSubTabChange) {
+      props.onSubTabChange(id)
+    } else {
+      setInternalTab(id)
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -34,7 +45,7 @@ export default function LearningHub(props: LearningHubProps) {
             key={id}
             role="tab"
             aria-selected={tab === id}
-            onClick={() => setTab(id)}
+            onClick={() => handleTabSelect(id)}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition ${
               tab === id ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-white"
             }`}
@@ -44,7 +55,7 @@ export default function LearningHub(props: LearningHubProps) {
         ))}
       </div>
 
-      {tab === "path" && <SkillPath {...props} onCreatePlan={() => setTab("calendar")} />}
+      {tab === "path" && <SkillPath {...props} onCreatePlan={() => handleTabSelect("calendar")} />}
       {tab === "calendar" && <LearningPlanner {...props} />}
       {tab === "leaderboard" && <Leaderboard />}
     </div>

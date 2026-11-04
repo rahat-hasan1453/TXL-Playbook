@@ -83,6 +83,17 @@ export default function TXLLearningPortal({ initialView = "auto" }: TXLLearningP
     return "path"
   })
 
+  const [lastPlanView, setLastPlanView] = useState<PortalView>(() => {
+    if (initialView === "calendar" || initialView === "leaderboard") return initialView
+    return "path"
+  })
+
+  useEffect(() => {
+    if (currentView === "path" || currentView === "calendar" || currentView === "leaderboard") {
+      setLastPlanView(currentView)
+    }
+  }, [currentView])
+
   const [selectedRoleTrack, setSelectedRoleTrack] = useState<string>("ALL")
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
@@ -487,17 +498,6 @@ export default function TXLLearningPortal({ initialView = "auto" }: TXLLearningP
 
   const isPlanView = currentView === "path" || currentView === "calendar" || currentView === "leaderboard"
   const isCurriculumView = currentView === "curriculum"
-
-  const [lastPlanView, setLastPlanView] = useState<PortalView>(() => {
-    if (initialView === "calendar" || initialView === "leaderboard") return initialView
-    return "path"
-  })
-
-  useEffect(() => {
-    if (currentView === "path" || currentView === "calendar" || currentView === "leaderboard") {
-      setLastPlanView(currentView)
-    }
-  }, [currentView])
 
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-zinc-100 flex flex-col font-sans selection:bg-zinc-800 selection:text-white">

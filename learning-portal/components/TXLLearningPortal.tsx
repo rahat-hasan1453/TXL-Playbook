@@ -486,6 +486,18 @@ export default function TXLLearningPortal({ initialView = "auto" }: TXLLearningP
   }
 
   const isPlanView = currentView === "path" || currentView === "calendar" || currentView === "leaderboard"
+  const isCurriculumView = currentView === "curriculum"
+
+  const [lastPlanView, setLastPlanView] = useState<PortalView>(() => {
+    if (initialView === "calendar" || initialView === "leaderboard") return initialView
+    return "path"
+  })
+
+  useEffect(() => {
+    if (currentView === "path" || currentView === "calendar" || currentView === "leaderboard") {
+      setLastPlanView(currentView)
+    }
+  }, [currentView])
 
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-zinc-100 flex flex-col font-sans selection:bg-zinc-800 selection:text-white">
@@ -540,17 +552,44 @@ export default function TXLLearningPortal({ initialView = "auto" }: TXLLearningP
             <ThemeToggle />
             {currentUserRole === "LEARNER" && <GameChip onClick={() => navigateToView("path")} />}
             {currentUserRole === "LEARNER" && (
-              <button
-                onClick={() => navigateToView(isPlanView ? "curriculum" : "path")}
-                className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition ${
-                  isPlanView
-                    ? "bg-[#121316] text-zinc-200 border-zinc-800/80 hover:border-zinc-700"
-                    : "bg-white text-black border-white"
-                }`}
+              <div
+                role="tablist"
+                aria-label="View toggle"
+                className="inline-flex items-center p-1 rounded-xl bg-[#121316] border border-zinc-800/80"
               >
-                <CalendarDays className="w-3.5 h-3.5" />
-                <span>{isPlanView ? "Curriculum" : "My Plan"}</span>
-              </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={isPlanView}
+                  onClick={() => navigateToView(lastPlanView || "path")}
+                  title="My Plan"
+                  aria-label="My Plan"
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    isPlanView
+                      ? "bg-white text-black shadow-sm"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">My Plan</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={isCurriculumView}
+                  onClick={() => navigateToView("curriculum")}
+                  title="Curriculum"
+                  aria-label="Curriculum"
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    isCurriculumView
+                      ? "bg-white text-black shadow-sm"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Curriculum</span>
+                </button>
+              </div>
             )}
             <div className="relative">
               <button
